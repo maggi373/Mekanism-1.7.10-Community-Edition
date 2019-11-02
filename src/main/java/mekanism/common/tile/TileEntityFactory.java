@@ -1,13 +1,11 @@
 package mekanism.common.tile;
 
-import io.netty.buffer.ByteBuf;
 import java.util.Arrays;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigCardAccess.ISpecialConfigData;
-import mekanism.api.TileNetworkList;
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
@@ -17,19 +15,15 @@ import mekanism.api.gas.IGasItem;
 import mekanism.api.infuse.InfuseObject;
 import mekanism.api.infuse.InfuseRegistry;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.InfuseStorage;
+import mekanism.common.misc.InfuseStorage;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismBlocks;
-import mekanism.common.MekanismItems;
-import mekanism.common.PacketHandler;
-import mekanism.common.SideData;
-import mekanism.common.Upgrade;
-import mekanism.common.base.IComparatorSupport;
+import mekanism.common.registry.MekanismBlocks;
+import mekanism.common.registry.MekanismItems;
+import mekanism.common.misc.SideData;
+import mekanism.common.misc.Upgrade;
+import mekanism.common.base.*;
 import mekanism.common.base.IFactory.MachineFuelType;
 import mekanism.common.base.IFactory.RecipeType;
-import mekanism.common.base.ISideConfiguration;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.ITierUpgradeable;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.integration.computer.IComputerIntegration;
@@ -67,7 +61,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 public class TileEntityFactory extends TileEntityMachine implements IComputerIntegration, ISideConfiguration, IGasHandler, ISpecialConfigData, ITierUpgradeable,
@@ -175,7 +168,7 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
 
         //Basic
         factory.facing = facing;
-        factory.clientFacing = clientFacing;
+        //factory.clientFacing = clientFacing;
         factory.ticker = ticker;
         factory.redstone = redstone;
         factory.redstoneLastTick = redstoneLastTick;
@@ -220,7 +213,8 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
 
         factory.upgraded = true;
         factory.markDirty();
-        Mekanism.packetHandler.sendUpdatePacket(factory);
+        //Mekanism.packetHandler.sendUpdatePacket(factory);
+        factory.sendPackets();
         return true;
     }
 
@@ -681,113 +675,63 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
-                sorting = !sorting;
-            } else if (type == 1) {
-                gasTank.setGas(null);
-                infuseStored.setEmpty();
-            }
-            return;
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isAllSave()) {
+            tag.setTag("gasTank", gasTank.write(new NBTTagCompound()));
         }
+        if(type.isAllSave() || type.isTileUpdate()) {
+            tag.setInteger("recipeType", recipeType.ordinal());
+            tag.setInteger("recipeTicks", recipeTicks);
+            tag.setBoolean("sorting", sorting);
+            if (infuseStored.getType() != null) {
+                tag.setString("type", infuseStored.getType().name);
+                tag.setInteger("infuseStored", infuseStored.getAmount());
+            } else {
+                tag.setString("type", "null");
+            }
+            for (int i = 0; i < tier.processes; i++) {
+                tag.setInteger("progress" + i, progress[i]);
+            }
+        }
+        if(type.isTileUpdate()) {
+            tag.setBoolean("upgraded", upgraded);
+            tag.setDouble("lastUsage", lastUsage);
+            TileUtils.addTankData(tag, gasTank);
+            upgraded = false;
+        }
+        return tag;
+    }
 
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            RecipeType oldRecipe = recipeType;
-            recipeType = RecipeType.values()[dataStream.readInt()];
+    @Override
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isAllSave()) {
+            gasTank.read(tag.getCompoundTag("gasTank"));
+            GasUtils.clearIfInvalid(gasTank, recipeType::isValidGas);
+        }
+        if(type.isAllSave() || type.isTileUpdate()) {
+            int typeC = tag.getInteger("recipeType");
+            setRecipeType(RecipeType.values()[typeC]);
             upgradeComponent.setSupported(Upgrade.GAS, recipeType.fuelEnergyUpgrades());
-            recipeTicks = dataStream.readInt();
-            sorting = dataStream.readBoolean();
-            upgraded = dataStream.readBoolean();
-            lastUsage = dataStream.readDouble();
-            int amount = dataStream.readInt();
-            if (amount > 0) {
+            recipeTicks = tag.getInteger("recipeTicks");
+            sorting = tag.getBoolean("sorting");
+            int amount = tag.getInteger("infuseStored");
+            if (amount != 0) {
                 infuseStored.setAmount(amount);
-                infuseStored.setType(InfuseRegistry.get(PacketHandler.readString(dataStream)));
+                infuseStored.setType(InfuseRegistry.get(tag.getString("type")));
             } else {
                 infuseStored.setEmpty();
             }
-
-            if (recipeType != oldRecipe) {
-                setRecipeType(recipeType);
-                if (!upgraded) {
-                    MekanismUtils.updateBlock(world, getPos());
-                }
-            }
-
             for (int i = 0; i < tier.processes; i++) {
-                progress[i] = dataStream.readInt();
-            }
-            TileUtils.readTankData(dataStream, gasTank);
-            if (upgraded) {
-                markDirty();
-                MekanismUtils.updateBlock(world, getPos());
-                upgraded = false;
+                progress[i] = tag.getInteger("progress" + i);
             }
         }
-    }
-
-    @Override
-    public void readFromNBT(NBTTagCompound nbtTags) {
-        super.readFromNBT(nbtTags);
-        setRecipeType(RecipeType.values()[nbtTags.getInteger("recipeType")]);
-        upgradeComponent.setSupported(Upgrade.GAS, recipeType.fuelEnergyUpgrades());
-        recipeTicks = nbtTags.getInteger("recipeTicks");
-        sorting = nbtTags.getBoolean("sorting");
-        int amount = nbtTags.getInteger("infuseStored");
-        if (amount != 0) {
-            infuseStored.setAmount(amount);
-            infuseStored.setType(InfuseRegistry.get(nbtTags.getString("type")));
+        if(type.isTileUpdate()) {
+            upgraded = tag.getBoolean("upgraded");
+            lastUsage = tag.getDouble("lastUsage");
+            TileUtils.readTankData(tag, gasTank);
         }
-        for (int i = 0; i < tier.processes; i++) {
-            progress[i] = nbtTags.getInteger("progress" + i);
-        }
-        gasTank.read(nbtTags.getCompoundTag("gasTank"));
-        GasUtils.clearIfInvalid(gasTank, recipeType::isValidGas);
-    }
-
-    @Nonnull
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
-        super.writeToNBT(nbtTags);
-        nbtTags.setInteger("recipeType", recipeType.ordinal());
-        nbtTags.setInteger("recipeTicks", recipeTicks);
-        nbtTags.setBoolean("sorting", sorting);
-        if (infuseStored.getType() != null) {
-            nbtTags.setString("type", infuseStored.getType().name);
-            nbtTags.setInteger("infuseStored", infuseStored.getAmount());
-        } else {
-            nbtTags.setString("type", "null");
-        }
-        for (int i = 0; i < tier.processes; i++) {
-            nbtTags.setInteger("progress" + i, progress[i]);
-        }
-        nbtTags.setTag("gasTank", gasTank.write(new NBTTagCompound()));
-        return nbtTags;
-    }
-
-    @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-
-        data.add(recipeType.ordinal());
-        data.add(recipeTicks);
-        data.add(sorting);
-        data.add(upgraded);
-        data.add(lastUsage);
-
-        data.add(infuseStored.getAmount());
-        if (infuseStored.getAmount() > 0) {
-            data.add(infuseStored.getType().name);
-        }
-
-        data.add(progress);
-        TileUtils.addTankData(data, gasTank);
-        upgraded = false;
-        return data;
     }
 
     public int getInputSlot(int operation) {

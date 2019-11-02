@@ -1,8 +1,10 @@
-package mekanism.common;
+package mekanism.common.misc;
 
 import com.mojang.authlib.GameProfile;
 import java.lang.ref.WeakReference;
 import javax.annotation.Nonnull;
+
+import mekanism.common.Mekanism;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.world.World;

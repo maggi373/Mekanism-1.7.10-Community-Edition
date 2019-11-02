@@ -2,7 +2,7 @@ package mekanism.common.recipe.ingredients;
 
 import java.util.List;
 import javax.annotation.Nonnull;
-import mekanism.common.OreDictCache;
+import mekanism.common.misc.OreDictCache;
 import net.minecraft.item.ItemStack;
 
 public class OredictMekIngredient implements IMekanismIngredient<ItemStack> {

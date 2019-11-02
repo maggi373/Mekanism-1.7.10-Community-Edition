@@ -2,7 +2,7 @@ package mekanism.client;
 
 import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
-import mekanism.common.MekanismSounds;
+import mekanism.common.registry.MekanismSounds;
 import mekanism.common.config.MekanismConfig;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumParticleTypes;

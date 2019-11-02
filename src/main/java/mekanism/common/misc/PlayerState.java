@@ -1,10 +1,11 @@
-package mekanism.common;
+package mekanism.common.misc;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import mekanism.client.sound.PlayerSound.SoundType;
 import mekanism.client.sound.SoundHandler;
+import mekanism.common.Mekanism;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.network.PacketFlamethrowerData.FlamethrowerDataMessage;
 import mekanism.common.network.PacketJetpackData.JetpackDataMessage;

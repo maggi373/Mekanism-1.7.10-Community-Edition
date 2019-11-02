@@ -5,7 +5,7 @@ import mcmultipart.api.multipart.IMultipart;
 import mcmultipart.api.slot.EnumFaceSlot;
 import mcmultipart.api.slot.IPartSlot;
 import mekanism.api.EnumColor;
-import mekanism.common.MekanismBlocks;
+import mekanism.common.registry.MekanismBlocks;
 import mekanism.common.block.BlockGlowPanel;
 import mekanism.common.block.states.BlockStateFacing;
 import mekanism.common.tile.TileEntityGlowPanel;

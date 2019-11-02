@@ -23,7 +23,7 @@ import mcmultipart.api.slot.EnumCenterSlot;
 import mcmultipart.api.world.IMultipartBlockAccess;
 import mcmultipart.multipart.MultipartRegistry;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismBlocks;
+import mekanism.common.registry.MekanismBlocks;
 import mekanism.common.block.BlockTransmitter;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.block.states.BlockStateTransmitter.TransmitterType.Size;

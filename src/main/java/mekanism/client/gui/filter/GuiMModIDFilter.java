@@ -3,7 +3,7 @@ package mekanism.client.gui.filter;
 import mekanism.api.Coord4D;
 import mekanism.client.gui.button.GuiButtonDisableableImage;
 import mekanism.common.Mekanism;
-import mekanism.common.OreDictCache;
+import mekanism.common.misc.OreDictCache;
 import mekanism.common.content.miner.MModIDFilter;
 import mekanism.common.network.PacketDigitalMinerGui.DigitalMinerGuiMessage;
 import mekanism.common.network.PacketDigitalMinerGui.MinerGuiPacket;

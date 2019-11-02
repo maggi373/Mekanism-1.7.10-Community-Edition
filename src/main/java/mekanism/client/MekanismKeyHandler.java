@@ -3,7 +3,7 @@ package mekanism.client;
 import java.util.Collections;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismSounds;
+import mekanism.common.registry.MekanismSounds;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.item.ItemBlockMachine;
 import mekanism.common.item.ItemConfigurator;

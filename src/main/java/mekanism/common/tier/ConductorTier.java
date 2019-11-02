@@ -1,6 +1,6 @@
 package mekanism.common.tier;
 
-import mekanism.common.ColourRGBA;
+import mekanism.common.misc.ColourRGBA;
 import mekanism.common.config.MekanismConfig;
 
 public enum ConductorTier implements ITier {

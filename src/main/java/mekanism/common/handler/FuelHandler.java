@@ -1,4 +1,4 @@
-package mekanism.common;
+package mekanism.common.handler;
 
 import buildcraft.api.fuels.BuildcraftFuelRegistry;
 import buildcraft.api.fuels.IFuel;

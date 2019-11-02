@@ -7,7 +7,7 @@ import javax.annotation.Nullable;
 import mekanism.api.IMekWrench;
 import mekanism.client.render.particle.MekanismParticleHelper;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismBlocks;
+import mekanism.common.registry.MekanismBlocks;
 import mekanism.common.base.ITierItem;
 import mekanism.common.block.property.PropertyConnection;
 import mekanism.common.block.states.BlockStateTransmitter;

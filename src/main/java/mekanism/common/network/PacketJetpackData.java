@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import mekanism.common.Mekanism;
-import mekanism.common.PacketHandler;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.item.ItemJetpack;
 import mekanism.common.item.ItemJetpack.JetpackMode;
 import mekanism.common.network.PacketJetpackData.JetpackDataMessage;

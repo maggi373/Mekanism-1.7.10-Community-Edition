@@ -2,7 +2,7 @@ package mekanism.common.item;
 
 import java.util.Locale;
 import javax.annotation.Nonnull;
-import mekanism.common.Resource;
+import mekanism.common.misc.Resource;
 import mekanism.common.base.IMetaItem;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.ItemStack;

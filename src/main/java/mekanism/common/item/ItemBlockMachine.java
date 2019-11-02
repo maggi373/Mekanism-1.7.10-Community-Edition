@@ -17,7 +17,7 @@ import mekanism.client.MekKeyHandler;
 import mekanism.client.MekanismClient;
 import mekanism.client.MekanismKeyHandler;
 import mekanism.common.Mekanism;
-import mekanism.common.Upgrade;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.base.FluidItemWrapper;
 import mekanism.common.base.IFactory;
 import mekanism.common.base.IFluidItemWrapper;

@@ -7,7 +7,7 @@ import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismFluids;
+import mekanism.common.registry.MekanismFluids;
 import mekanism.common.base.IActiveState;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.util.InventoryUtils;

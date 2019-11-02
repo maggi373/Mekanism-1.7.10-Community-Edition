@@ -1,9 +1,7 @@
 package mekanism.common.tile;
 
-import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 import mekanism.api.EnumColor;
-import mekanism.api.TileNetworkList;
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
@@ -11,15 +9,10 @@ import mekanism.api.gas.GasTankInfo;
 import mekanism.api.gas.IGasHandler;
 import mekanism.api.gas.IGasItem;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.Mekanism;
-import mekanism.common.SideData;
-import mekanism.common.base.IComparatorSupport;
-import mekanism.common.base.IRedstoneControl;
-import mekanism.common.base.ISideConfiguration;
-import mekanism.common.base.ITierUpgradeable;
+import mekanism.common.misc.SideData;
+import mekanism.common.base.*;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.integration.computer.IComputerIntegration;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tier.GasTankTier;
@@ -32,14 +25,11 @@ import mekanism.common.util.InventoryUtils;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.TileUtils;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 
 public class TileEntityGasTank extends TileEntityContainerBlock implements IGasHandler, IRedstoneControl, ISideConfiguration, ISecurityTile, ITierUpgradeable,
       IComputerIntegration, IComparatorSupport {
@@ -133,7 +123,7 @@ public class TileEntityGasTank extends TileEntityContainerBlock implements IGasH
         }
         tier = GasTankTier.values()[upgradeTier.ordinal()];
         gasTank.setMaxGas(tier.getStorage());
-        Mekanism.packetHandler.sendUpdatePacket(this);
+        sendPackets();
         markDirty();
         return true;
     }
@@ -232,7 +222,7 @@ public class TileEntityGasTank extends TileEntityContainerBlock implements IGasH
         return configComponent.isCapabilityDisabled(capability, side, facing) || super.isCapabilityDisabled(capability, side);
     }
 
-    @Override
+    /*@Override
     public void handlePacketData(ByteBuf dataStream) {
         if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
             int type = dataStream.readInt();
@@ -258,9 +248,42 @@ public class TileEntityGasTank extends TileEntityContainerBlock implements IGasH
                 MekanismUtils.updateBlock(world, getPos());
             }
         }
+    }*/
+
+    @Override
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isAllSave()) {
+            tag.setTag("gasTank", gasTank.write(new NBTTagCompound()));
+        }
+        if(type.isAllSave() || type.isTileUpdate()) {
+            tag.setInteger("tier", tier.ordinal());
+            tag.setInteger("dumping", dumping.ordinal());
+            tag.setInteger("controlType", controlType.ordinal());
+        }
+        if(type.isTileUpdate()) {
+            TileUtils.addTankData(tag, gasTank);
+        }
+        return tag;
     }
 
     @Override
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isAllSave()) {
+            gasTank.read(tag.getCompoundTag("gasTank"));
+        }
+        if(type.isAllSave() || type.isTileUpdate()) {
+            tier = GasTankTier.values()[tag.getInteger("tier")];
+            dumping = GasMode.values()[tag.getInteger("dumping")];
+            controlType = RedstoneControl.values()[tag.getInteger("controlType")];
+        }
+        if(type.isTileUpdate()) {
+            TileUtils.readTankData(tag, gasTank);
+        }
+    }
+
+    /*@Override
     public void readFromNBT(NBTTagCompound nbtTags) {
         super.readFromNBT(nbtTags);
         tier = GasTankTier.values()[nbtTags.getInteger("tier")];
@@ -288,7 +311,7 @@ public class TileEntityGasTank extends TileEntityContainerBlock implements IGasH
         data.add(dumping.ordinal());
         data.add(controlType.ordinal());
         return data;
-    }
+    }*/
 
     @Override
     public boolean canSetFacing(@Nonnull EnumFacing facing) {

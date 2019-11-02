@@ -2,7 +2,7 @@ package mekanism.client.gui;
 
 import java.util.List;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.SideData;
+import mekanism.common.misc.SideData;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.item.ItemConfigurator;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;

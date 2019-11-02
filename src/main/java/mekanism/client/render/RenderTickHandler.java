@@ -10,7 +10,7 @@ import mekanism.client.ClientTickHandler;
 import mekanism.client.render.particle.EntityJetpackFlameFX;
 import mekanism.client.render.particle.EntityJetpackSmokeFX;
 import mekanism.client.render.particle.EntityScubaBubbleFX;
-import mekanism.common.ColourRGBA;
+import mekanism.common.misc.ColourRGBA;
 import mekanism.common.Mekanism;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.item.ItemConfigurator;

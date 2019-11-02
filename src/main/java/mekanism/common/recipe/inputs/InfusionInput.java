@@ -2,7 +2,7 @@ package mekanism.common.recipe.inputs;
 
 import mekanism.api.infuse.InfuseRegistry;
 import mekanism.api.infuse.InfuseType;
-import mekanism.common.InfuseStorage;
+import mekanism.common.misc.InfuseStorage;
 import mekanism.common.util.StackUtils;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;

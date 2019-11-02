@@ -1,13 +1,17 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
+
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.IHeatTransfer;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.NBTType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.content.boiler.BoilerCache;
 import mekanism.common.content.boiler.BoilerUpdateProtocol;
@@ -20,6 +24,7 @@ import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.TileUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.NonNullList;
@@ -143,7 +148,7 @@ public class TileEntityBoilerCasing extends TileEntityMultiblock<SynchronizedBoi
     @Override
     public boolean onActivate(EntityPlayer player, EnumHand hand, ItemStack stack) {
         if (!player.isSneaking() && structure != null) {
-            Mekanism.packetHandler.sendUpdatePacket(this);
+            sendPackets();
             player.openGui(Mekanism.instance, 54, world, getPos().getX(), getPos().getY(), getPos().getZ());
             return true;
         }
@@ -171,39 +176,97 @@ public class TileEntityBoilerCasing extends TileEntityMultiblock<SynchronizedBoi
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isTileUpdate()) {
+            if (structure != null) {
+                //data.add(structure.waterVolume * BoilerUpdateProtocol.WATER_PER_TANK);
+                tag.setInteger("1", structure.waterVolume * BoilerUpdateProtocol.WATER_PER_TANK);
+                //data.add(structure.steamVolume * BoilerUpdateProtocol.STEAM_PER_TANK);
+                tag.setInteger("2", structure.steamVolume * BoilerUpdateProtocol.STEAM_PER_TANK);
+                //data.add(structure.lastEnvironmentLoss);
+                tag.setDouble("3", structure.lastEnvironmentLoss);
+                //data.add(structure.lastBoilRate);
+                tag.setInteger("4",structure.lastBoilRate );
+                //data.add(structure.superheatingElements);
+                tag.setInteger("5", structure.superheatingElements);
+                //data.add(structure.temperature);
+                tag.setDouble("6", structure.temperature);
+                //data.add(structure.lastMaxBoil);
+                tag.setInteger("7", structure.lastMaxBoil);
 
-        if (structure != null) {
-            data.add(structure.waterVolume * BoilerUpdateProtocol.WATER_PER_TANK);
-            data.add(structure.steamVolume * BoilerUpdateProtocol.STEAM_PER_TANK);
-            data.add(structure.lastEnvironmentLoss);
-            data.add(structure.lastBoilRate);
-            data.add(structure.superheatingElements);
-            data.add(structure.temperature);
-            data.add(structure.lastMaxBoil);
+                //TileUtils.addFluidStack(data, structure.waterStored);
+                tag.setTag("8", structure.waterStored.writeToNBT(new NBTTagCompound()));
+                //TileUtils.addFluidStack(data, structure.steamStored);
+                tag.setTag("9", structure.steamStored.writeToNBT(new NBTTagCompound()));
 
-            TileUtils.addFluidStack(data, structure.waterStored);
-            TileUtils.addFluidStack(data, structure.steamStored);
+                structure.upperRenderLocation.write(tag);
 
-            structure.upperRenderLocation.write(data);
-
-            if (isRendering) {
-                data.add(structure.clientHot);
-                Set<ValveData> toSend = new HashSet<>();
-                for (ValveData valveData : structure.valves) {
-                    if (valveData.activeTicks > 0) {
-                        toSend.add(valveData);
+                if (isRendering) {
+                    //data.add(structure.clientHot);
+                    tag.setBoolean("10", structure.clientHot);
+                    List<ValveData> toSend = new ArrayList<>();
+                    for (ValveData valveData : structure.valves) {
+                        if (valveData.activeTicks > 0) {
+                            toSend.add(valveData);
+                        }
                     }
-                }
-                data.add(toSend.size());
-                for (ValveData valveData : toSend) {
-                    valveData.location.write(data);
-                    data.add(valveData.side.ordinal());
+                    //data.add(toSend.size());
+                    tag.setInteger("11", toSend.size());
+
+                    for (int i = 0; i < toSend.size(); i++) {
+                        ValveData valveData = toSend.get(i);
+                        NBTTagCompound tag1 = new NBTTagCompound();
+                        valveData.location.write(tag1);
+                        tag1.setInteger("5", valveData.side.ordinal());
+                        tag.setTag("12c"+i, tag1);
+                    }
+
                 }
             }
         }
-        return data;
+        return tag;
+    }
+
+    @Override
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isTileUpdate()) {
+            if (clientHasStructure) {
+                clientWaterCapacity = tag.getInteger("1");
+                clientSteamCapacity = tag.getInteger("2");
+                structure.lastEnvironmentLoss = tag.getDouble("3");
+                structure.lastBoilRate = tag.getInteger("4");
+                structure.superheatingElements = tag.getInteger("5");
+                structure.temperature = tag.getDouble("6");
+                structure.lastMaxBoil = tag.getInteger("7");
+
+                structure.waterStored = FluidStack.loadFluidStackFromNBT(tag.getCompoundTag("8"));
+                structure.steamStored = FluidStack.loadFluidStackFromNBT(tag.getCompoundTag("9"));
+
+                structure.upperRenderLocation = Coord4D.read(tag);
+
+                if (isRendering) {
+                    structure.clientHot = tag.getBoolean("10");
+                    SynchronizedBoilerData.clientHotMap.put(structure.inventoryID, structure.clientHot);
+                    int size = tag.getInteger("11");
+                    valveViewing.clear();
+                    for (int i = 0; i < size; i++) {
+                        ValveData data = new ValveData();
+                        NBTTagCompound tag1 = tag.getCompoundTag("12c"+i);
+                        data.location = Coord4D.read(tag1);
+                        data.side = EnumFacing.byIndex(tag1.getInteger("5"));
+
+                        valveViewing.add(data);
+
+                        TileEntityBoilerCasing tileEntity = (TileEntityBoilerCasing) data.location.getTileEntity(world);
+                        if (tileEntity != null) {
+                            tileEntity.clientHasStructure = true;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public int getScaledWaterLevel(int i) {
@@ -238,47 +301,6 @@ public class TileEntityBoilerCasing extends TileEntityMultiblock<SynchronizedBoi
 
     public int getSuperheatingElements() {
         return structure != null ? structure.superheatingElements : 0;
-    }
-
-    @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            if (clientHasStructure) {
-                clientWaterCapacity = dataStream.readInt();
-                clientSteamCapacity = dataStream.readInt();
-                structure.lastEnvironmentLoss = dataStream.readDouble();
-                structure.lastBoilRate = dataStream.readInt();
-                structure.superheatingElements = dataStream.readInt();
-                structure.temperature = dataStream.readDouble();
-                structure.lastMaxBoil = dataStream.readInt();
-
-                structure.waterStored = TileUtils.readFluidStack(dataStream);
-                structure.steamStored = TileUtils.readFluidStack(dataStream);
-
-                structure.upperRenderLocation = Coord4D.read(dataStream);
-
-                if (isRendering) {
-                    structure.clientHot = dataStream.readBoolean();
-                    SynchronizedBoilerData.clientHotMap.put(structure.inventoryID, structure.clientHot);
-                    int size = dataStream.readInt();
-                    valveViewing.clear();
-                    for (int i = 0; i < size; i++) {
-                        ValveData data = new ValveData();
-                        data.location = Coord4D.read(dataStream);
-                        data.side = EnumFacing.byIndex(dataStream.readInt());
-
-                        valveViewing.add(data);
-
-                        TileEntityBoilerCasing tileEntity = (TileEntityBoilerCasing) data.location.getTileEntity(world);
-                        if (tileEntity != null) {
-                            tileEntity.clientHasStructure = true;
-                        }
-                    }
-                }
-            }
-        }
     }
 
     @Override

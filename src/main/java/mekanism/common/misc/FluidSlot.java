@@ -1,4 +1,4 @@
-package mekanism.common;
+package mekanism.common.misc;
 
 /**
  * Used to manage a slot that stores fluid. Has 3 main values: a stored amount of fluid, maximum fluid, and fluid ID.

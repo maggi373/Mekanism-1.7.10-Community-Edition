@@ -1,4 +1,4 @@
-package mekanism.common;
+package mekanism.common.misc;
 
 /**
  * Created by ben on 30/04/16.

@@ -1,5 +1,6 @@
-package mekanism.common;
+package mekanism.common.handler;
 
+import mekanism.common.Mekanism;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;

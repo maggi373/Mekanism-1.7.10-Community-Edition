@@ -2,7 +2,7 @@ package mekanism.common.inventory.container;
 
 import javax.annotation.Nonnull;
 import mekanism.api.gas.IGasItem;
-import mekanism.common.MekanismFluids;
+import mekanism.common.registry.MekanismFluids;
 import mekanism.common.inventory.slot.SlotEnergy.SlotDischarge;
 import mekanism.common.inventory.slot.SlotStorageTank;
 import mekanism.common.recipe.RecipeHandler.Recipe;

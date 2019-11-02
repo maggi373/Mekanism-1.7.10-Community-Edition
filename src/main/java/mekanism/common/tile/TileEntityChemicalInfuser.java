@@ -1,21 +1,17 @@
 package mekanism.common.tile;
 
-import io.netty.buffer.ByteBuf;
 import java.util.List;
 import javax.annotation.Nonnull;
-import mekanism.api.TileNetworkList;
+
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
 import mekanism.api.gas.GasTankInfo;
 import mekanism.api.gas.IGasHandler;
 import mekanism.api.gas.IGasItem;
-import mekanism.common.Upgrade;
-import mekanism.common.Upgrade.IUpgradeInfoHandler;
-import mekanism.common.base.IRedstoneControl;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.ITankManager;
-import mekanism.common.base.IUpgradeTile;
+import mekanism.common.misc.Upgrade;
+import mekanism.common.misc.Upgrade.IUpgradeInfoHandler;
+import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.recipe.RecipeHandler;
@@ -34,7 +30,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 
 public class TileEntityChemicalInfuser extends TileEntityMachine implements IGasHandler, IRedstoneControl, ISustainedData, IUpgradeTile, IUpgradeInfoHandler,
       ITankManager, ISecurityTile {
@@ -117,24 +112,26 @@ public class TileEntityChemicalInfuser extends TileEntityMachine implements IGas
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            clientEnergyUsed = dataStream.readDouble();
-            TileUtils.readTankData(dataStream, leftTank);
-            TileUtils.readTankData(dataStream, rightTank);
-            TileUtils.readTankData(dataStream, centerTank);
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isTileUpdate()) {
+            tag.setDouble("1", clientEnergyUsed);
+            TileUtils.addTankData("2", tag, leftTank);
+            TileUtils.addTankData("3", tag, rightTank);
+            TileUtils.addTankData("4", tag, centerTank);
         }
+        return tag;
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(clientEnergyUsed);
-        TileUtils.addTankData(data, leftTank);
-        TileUtils.addTankData(data, rightTank);
-        TileUtils.addTankData(data, centerTank);
-        return data;
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isTileUpdate()) {
+            clientEnergyUsed = tag.getDouble("1");
+            TileUtils.readTankData("2", tag, leftTank);
+            TileUtils.readTankData("3", tag, rightTank);
+            TileUtils.readTankData("4", tag, centerTank);
+        }
     }
 
     @Override

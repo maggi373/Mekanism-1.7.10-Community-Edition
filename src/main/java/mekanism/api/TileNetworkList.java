@@ -7,6 +7,7 @@ import javax.annotation.Nonnull;
 import net.minecraft.util.NonNullList;
 import org.apache.commons.lang3.Validate;
 
+@Deprecated
 public class TileNetworkList extends NonNullList<Object> {
 
     public TileNetworkList() {

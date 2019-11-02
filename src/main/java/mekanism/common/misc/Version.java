@@ -1,4 +1,4 @@
-package mekanism.common;
+package mekanism.common.misc;
 
 /**
  * Version v2.0.0. Simple version handling for Mekanism.

@@ -11,7 +11,7 @@ import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.energy.EnergizedItemManager;
 import mekanism.api.energy.IEnergizedItem;
-import mekanism.common.MekanismItems;
+import mekanism.common.registry.MekanismItems;
 import mekanism.common.base.ISustainedInventory;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;

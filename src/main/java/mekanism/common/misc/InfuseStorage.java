@@ -1,9 +1,10 @@
-package mekanism.common;
+package mekanism.common.misc;
 
 import javax.annotation.Nonnull;
 import mekanism.api.infuse.InfuseObject;
 import mekanism.api.infuse.InfuseRegistry;
 import mekanism.api.infuse.InfuseType;
+import mekanism.common.Mekanism;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.util.ItemDataUtils;
 import net.minecraft.item.ItemStack;

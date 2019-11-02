@@ -1,9 +1,10 @@
-package mekanism.common;
+package mekanism.common.misc;
 
 import java.util.List;
 import mekanism.api.Coord4D;
 import mekanism.api.Pos3D;
 import mekanism.api.lasers.ILaserReceptor;
+import mekanism.common.Mekanism;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.util.CapabilityUtils;

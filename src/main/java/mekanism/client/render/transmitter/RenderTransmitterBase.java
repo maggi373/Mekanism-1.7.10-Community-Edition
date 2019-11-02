@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import mekanism.client.render.MekanismRenderer;
-import mekanism.common.ColourRGBA;
+import mekanism.common.misc.ColourRGBA;
 import mekanism.common.tile.transmitter.TileEntityTransmitter;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.MekanismUtils.ResourceType;

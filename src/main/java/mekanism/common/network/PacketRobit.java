@@ -2,7 +2,7 @@ package mekanism.common.network;
 
 import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
-import mekanism.common.PacketHandler;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.entity.EntityRobit;
 import mekanism.common.network.PacketRobit.RobitMessage;
 import mekanism.common.util.MekanismUtils;

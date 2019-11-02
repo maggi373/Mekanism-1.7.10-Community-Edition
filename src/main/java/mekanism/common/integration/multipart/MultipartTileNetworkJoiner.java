@@ -12,7 +12,9 @@ import mcmultipart.api.slot.EnumFaceSlot;
 import mcmultipart.api.slot.IPartSlot;
 import mcmultipart.api.world.IMultipartBlockAccess;
 import mekanism.api.TileNetworkList;
+import mekanism.common.base.INetworkNBT;
 import mekanism.common.base.ITileNetwork;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.world.IBlockAccess;
@@ -25,10 +27,10 @@ import net.minecraft.world.IBlockAccess;
  * <br>
  * In this case, since transmitters do not attach to a side and therefore have no matching EnumFacing the special value 6 is used to represent the center slot.
  */
-public class MultipartTileNetworkJoiner implements ITileNetwork {
+public class MultipartTileNetworkJoiner {
 
     //TODO nullable-ish enum map
-    private final Int2ObjectMap<ITileNetwork> tileSideMap;
+    private final Int2ObjectMap<INetworkNBT> tileSideMap;
 
     /**
      * Called by MCMP's multipart container when more than one part implements {@link ITileNetwork}.<br>
@@ -37,7 +39,11 @@ public class MultipartTileNetworkJoiner implements ITileNetwork {
      *
      * @param tileList A list of the tile entities that implement {@link ITileNetwork} in the container.
      */
-    public MultipartTileNetworkJoiner(List<ITileNetwork> tileList) {
+
+
+
+
+    public MultipartTileNetworkJoiner(List<INetworkNBT> tileList) {
         tileSideMap = new Int2ObjectArrayMap<>(7);
         IMultipartContainer container = null;
 
@@ -55,7 +61,7 @@ public class MultipartTileNetworkJoiner implements ITileNetwork {
             for (IPartSlot slot : container.getParts().keySet()) {
                 Optional<IMultipartTile> partTile = container.getPartTile(slot);
                 if (partTile.isPresent()) {
-                    int tileIndex = tileList.indexOf(partTile.get().getTileEntity());
+                    int tileIndex = tileList.indexOf((INetworkNBT) partTile.get().getTileEntity());
                     if (tileIndex >= 0) {
                         byte slotValue = slot instanceof EnumFaceSlot ? (byte) ((EnumFaceSlot) slot).ordinal() : 6;
                         tileSideMap.put(slotValue, tileList.get(tileIndex));
@@ -72,6 +78,7 @@ public class MultipartTileNetworkJoiner implements ITileNetwork {
      * @param data   The network data list
      * @param facing The side this part is attached to or <code>null</code> for the center slot
      */
+    @Deprecated
     public static void addMultipartHeader(TileEntity entity, TileNetworkList data, EnumFacing facing) {
         int tileNetworkParts = 0;
         IMultipartContainer container = MultipartMekanism.getContainer(entity.getWorld(), entity.getPos());
@@ -91,7 +98,28 @@ public class MultipartTileNetworkJoiner implements ITileNetwork {
         }
     }
 
-    @Override
+    public static boolean addMultipartHeader(String id, NBTTagCompound tag, TileEntity entity, EnumFacing facing) {
+        int tileNetworkParts = 0;
+        IMultipartContainer container = MultipartMekanism.getContainer(entity.getWorld(), entity.getPos());
+        if (container != null) {
+            for (IPartSlot slot : container.getParts().keySet()) {
+                TileEntity part = container.getPartTile(slot).map(IMultipartTile::getTileEntity).orElse(null);
+                if (part instanceof INetworkNBT) {
+                    tileNetworkParts++;
+                    if (tileNetworkParts > 1) {
+                        break;
+                    }
+                }
+            }
+        }
+        if (tileNetworkParts > 1) {
+            tag.setByte(id, (byte) (facing == null ? 6 : facing.ordinal()));
+            return true;
+        }
+        return false;
+    }
+
+    /*@Override
     public void handlePacketData(ByteBuf dataStream) throws Exception {
         while (dataStream.readableBytes() > 0) {
             byte side = dataStream.readByte();
@@ -113,5 +141,5 @@ public class MultipartTileNetworkJoiner implements ITileNetwork {
             childData.clear();
         }
         return data;
-    }
+    }*/
 }

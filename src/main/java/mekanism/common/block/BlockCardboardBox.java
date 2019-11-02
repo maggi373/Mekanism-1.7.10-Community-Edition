@@ -4,7 +4,7 @@ import static mekanism.common.block.states.BlockStateCardboardBox.storagePropert
 
 import javax.annotation.Nonnull;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismBlocks;
+import mekanism.common.registry.MekanismBlocks;
 import mekanism.common.block.states.BlockStateCardboardBox;
 import mekanism.common.item.ItemBlockCardboardBox;
 import mekanism.common.tile.TileEntityCardboardBox;

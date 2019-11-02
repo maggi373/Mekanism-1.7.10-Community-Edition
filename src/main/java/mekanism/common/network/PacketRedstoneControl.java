@@ -2,7 +2,7 @@ package mekanism.common.network;
 
 import io.netty.buffer.ByteBuf;
 import mekanism.api.Coord4D;
-import mekanism.common.PacketHandler;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.IRedstoneControl.RedstoneControl;
 import mekanism.common.network.PacketRedstoneControl.RedstoneControlMessage;

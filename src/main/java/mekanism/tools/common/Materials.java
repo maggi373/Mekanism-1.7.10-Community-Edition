@@ -3,7 +3,7 @@ package mekanism.tools.common;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
-import mekanism.common.MekanismItems;
+import mekanism.common.registry.MekanismItems;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.config.ToolsConfig;
 import mekanism.common.config.ToolsConfig.ArmorBalance;

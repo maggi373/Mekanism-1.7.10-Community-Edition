@@ -1,7 +1,7 @@
 package mekanism.common.content.transporter;
 
 import java.util.List;
-import mekanism.common.OreDictCache;
+import mekanism.common.misc.OreDictCache;
 import mekanism.common.util.ItemRegistryUtils;
 import mekanism.common.util.StackUtils;
 import net.minecraft.block.Block;

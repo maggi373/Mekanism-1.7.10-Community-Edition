@@ -3,7 +3,7 @@ package mekanism.client.jei.machine.chemical;
 import mekanism.api.gas.GasStack;
 import mekanism.client.jei.BaseRecipeCategory;
 import mekanism.client.jei.MekanismJEI;
-import mekanism.common.MekanismFluids;
+import mekanism.common.registry.MekanismFluids;
 import mekanism.common.recipe.RecipeHandler.Recipe;
 import mekanism.common.recipe.machines.DissolutionRecipe;
 import mekanism.common.tile.TileEntityChemicalDissolutionChamber;

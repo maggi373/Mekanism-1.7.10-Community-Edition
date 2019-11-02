@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import mekanism.api.IMekWrench;
 import mekanism.api.gas.IGasItem;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismBlocks;
+import mekanism.common.registry.MekanismBlocks;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.base.ISustainedInventory;
 import mekanism.common.base.ITierItem;

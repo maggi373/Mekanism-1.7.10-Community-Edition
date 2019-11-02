@@ -2,7 +2,7 @@ package mekanism.common.item;
 
 import javax.annotation.Nonnull;
 import mekanism.api.IAlloyInteraction;
-import mekanism.common.MekanismItems;
+import mekanism.common.registry.MekanismItems;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.util.CapabilityUtils;

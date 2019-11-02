@@ -16,7 +16,7 @@ import mekanism.api.IConfigurable;
 import mekanism.api.IMekWrench;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
-import mekanism.common.SideData;
+import mekanism.common.misc.SideData;
 import mekanism.common.base.IItemNetwork;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.capabilities.Capabilities;

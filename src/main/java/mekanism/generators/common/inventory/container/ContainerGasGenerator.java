@@ -2,7 +2,7 @@ package mekanism.generators.common.inventory.container;
 
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.IGasItem;
-import mekanism.common.FuelHandler;
+import mekanism.common.handler.FuelHandler;
 import mekanism.common.inventory.slot.SlotEnergy.SlotCharge;
 import mekanism.generators.common.tile.TileEntityGasGenerator;
 import net.minecraft.entity.player.InventoryPlayer;

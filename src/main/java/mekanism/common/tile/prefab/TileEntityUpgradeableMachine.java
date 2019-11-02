@@ -2,8 +2,8 @@ package mekanism.common.tile.prefab;
 
 import java.util.Objects;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.MekanismBlocks;
-import mekanism.common.Upgrade;
+import mekanism.common.registry.MekanismBlocks;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.base.IFactory.RecipeType;
 import mekanism.common.base.ITierUpgradeable;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
@@ -41,7 +41,7 @@ public abstract class TileEntityUpgradeableMachine<INPUT extends MachineInput<IN
 
         //Basic
         factory.facing = facing;
-        factory.clientFacing = clientFacing;
+        //factory.clientFacing = clientFacing;
         factory.ticker = ticker;
         factory.redstone = redstone;
         factory.redstoneLastTick = redstoneLastTick;

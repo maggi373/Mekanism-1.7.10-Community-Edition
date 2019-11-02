@@ -3,7 +3,7 @@ package mekanism.common.block;
 import java.util.Random;
 import javax.annotation.Nonnull;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismItems;
+import mekanism.common.registry.MekanismItems;
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;

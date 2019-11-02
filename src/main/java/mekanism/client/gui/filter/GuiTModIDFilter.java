@@ -4,7 +4,7 @@ import mekanism.api.Coord4D;
 import mekanism.client.gui.button.GuiButtonDisableableImage;
 import mekanism.client.gui.button.GuiColorButton;
 import mekanism.common.Mekanism;
-import mekanism.common.OreDictCache;
+import mekanism.common.misc.OreDictCache;
 import mekanism.common.content.transporter.TModIDFilter;
 import mekanism.common.network.PacketLogisticalSorterGui.LogisticalSorterGuiMessage;
 import mekanism.common.network.PacketLogisticalSorterGui.SorterGuiPacket;

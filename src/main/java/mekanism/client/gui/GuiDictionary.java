@@ -4,7 +4,7 @@ import java.io.IOException;
 import mekanism.client.gui.element.GuiScrollList;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.client.sound.SoundHandler;
-import mekanism.common.OreDictCache;
+import mekanism.common.misc.OreDictCache;
 import mekanism.common.inventory.container.ContainerDictionary;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;

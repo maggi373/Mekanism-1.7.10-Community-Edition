@@ -4,7 +4,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import mekanism.api.EnumColor;
 import mekanism.client.render.MekanismRenderer;
-import mekanism.common.SideData;
+import mekanism.common.misc.SideData;
 import mekanism.common.tile.component.TileComponentConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;

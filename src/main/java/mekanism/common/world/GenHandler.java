@@ -1,7 +1,7 @@
 package mekanism.common.world;
 
 import java.util.Random;
-import mekanism.common.MekanismBlocks;
+import mekanism.common.registry.MekanismBlocks;
 import mekanism.common.config.MekanismConfig;
 import net.minecraft.block.state.pattern.BlockMatcher;
 import net.minecraft.init.Blocks;

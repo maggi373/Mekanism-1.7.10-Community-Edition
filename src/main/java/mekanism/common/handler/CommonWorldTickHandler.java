@@ -1,10 +1,12 @@
-package mekanism.common;
+package mekanism.common.handler;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
+
+import mekanism.common.Mekanism;
 import mekanism.common.frequency.FrequencyManager;
 import mekanism.common.multiblock.MultiblockManager;
 import net.minecraft.util.math.ChunkPos;

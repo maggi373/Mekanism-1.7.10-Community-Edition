@@ -1,16 +1,9 @@
 package mekanism.common.tile;
 
-import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
-import mekanism.api.Coord4D;
+
 import mekanism.api.IConfigurable;
-import mekanism.api.TileNetworkList;
-import mekanism.common.Mekanism;
-import mekanism.common.PacketHandler;
-import mekanism.common.base.IActiveState;
-import mekanism.common.base.IComparatorSupport;
-import mekanism.common.base.ILogisticalTransporter;
-import mekanism.common.base.ITierUpgradeable;
+import mekanism.common.base.*;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.content.transporter.TransitRequest;
 import mekanism.common.content.transporter.TransitRequest.TransitResponse;
@@ -36,7 +29,6 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
@@ -78,7 +70,7 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
             return false;
         }
         tier = BinTier.values()[upgradeTier.ordinal()];
-        Mekanism.packetHandler.sendUpdatePacket(this);
+        sendPackets();
         markDirty();
         return true;
     }
@@ -202,7 +194,7 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
 
             if (delayTicks == 0) {
                 if (!bottomStack.isEmpty() && isActive) {
-                    TileEntity tile = Coord4D.get(this).offset(EnumFacing.DOWN).getTileEntity(world);
+                    TileEntity tile = world.getTileEntity(pos.offset(EnumFacing.DOWN));
                     ILogisticalTransporter transporter = CapabilityUtils.getCapability(tile, Capabilities.LOGISTICAL_TRANSPORTER_CAPABILITY, EnumFacing.UP);
                     TransitResponse response;
                     if (transporter == null) {
@@ -222,63 +214,40 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
         }
     }
 
-    @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
-        super.writeToNBT(nbtTags);
-        nbtTags.setBoolean("isActive", isActive);
-        nbtTags.setInteger("itemCount", cacheCount);
-        nbtTags.setInteger("tier", tier.ordinal());
-        if (!bottomStack.isEmpty()) {
-            nbtTags.setTag("bottomStack", bottomStack.writeToNBT(new NBTTagCompound()));
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isAllSave()) {
+            tag.setTag("bottomStack", bottomStack.writeToNBT(new NBTTagCompound()));
+            tag.setTag("topStack", topStack.writeToNBT(new NBTTagCompound()));
+            tag.setTag("itemType", itemType.writeToNBT(new NBTTagCompound()));
         }
-        if (!topStack.isEmpty()) {
-            nbtTags.setTag("topStack", topStack.writeToNBT(new NBTTagCompound()));
+        if(type.isAllSave() || type.isTileUpdate()) {
+            tag.setBoolean("isActive", isActive);
+            tag.setInteger("itemCount", cacheCount);
+            tag.setInteger("tier", tier.ordinal());
         }
-        if (getItemCount() > 0) {
-            nbtTags.setTag("itemType", itemType.writeToNBT(new NBTTagCompound()));
+        if(type.isTileUpdate()) {
+            itemType.writeToNBT(tag);
         }
-        return nbtTags;
+        return tag;
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound nbtTags) {
-        super.readFromNBT(nbtTags);
-        clientActive = isActive = nbtTags.getBoolean("isActive");
-        cacheCount = nbtTags.getInteger("itemCount");
-        tier = BinTier.values()[nbtTags.getInteger("tier")];
-        bottomStack = new ItemStack(nbtTags.getCompoundTag("bottomStack"));
-        topStack = new ItemStack(nbtTags.getCompoundTag("topStack"));
-        if (getItemCount() > 0) {
-            itemType = new ItemStack(nbtTags.getCompoundTag("itemType"));
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isAllSave()) {
+            bottomStack = new ItemStack(tag.getCompoundTag("bottomStack"));
+            topStack = new ItemStack(tag.getCompoundTag("topStack"));
+            itemType = new ItemStack(tag.getCompoundTag("itemType"));
         }
-    }
-
-    @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(isActive);
-        data.add(getItemCount());
-        data.add(tier.ordinal());
-        if (getItemCount() > 0) {
-            data.add(itemType);
+        if(type.isAllSave() || type.isTileUpdate()) {
+            clientActive = isActive = tag.getBoolean("isActive");
+            cacheCount = tag.getInteger("itemCount");
+            tier = BinTier.values()[tag.getInteger("tier")];
         }
-        return data;
-    }
-
-    @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            clientActive = isActive = dataStream.readBoolean();
-            clientAmount = dataStream.readInt();
-            tier = BinTier.values()[dataStream.readInt()];
-            if (clientAmount > 0) {
-                itemType = PacketHandler.readStack(dataStream);
-            } else {
-                itemType = ItemStack.EMPTY;
-            }
-            MekanismUtils.updateBlock(world, getPos());
+        if(type.isTileUpdate()) {
+            itemType = new ItemStack(tag);
         }
     }
 
@@ -349,7 +318,7 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
         super.markDirty();
         if (!world.isRemote) {
             MekanismUtils.saveChunk(this);
-            Mekanism.packetHandler.sendUpdatePacket(this);
+            sendPackets();
             prevCount = getItemCount();
             sortStacks();
         }
@@ -468,7 +437,7 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
     public void setActive(boolean active) {
         isActive = active;
         if (clientActive != active) {
-            Mekanism.packetHandler.sendUpdatePacket(this);
+            sendPackets();
             clientActive = active;
         }
     }

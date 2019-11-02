@@ -1,6 +1,8 @@
-package mekanism.common;
+package mekanism.common.handler;
 
 import mekanism.api.gas.GasStack;
+import mekanism.common.misc.KeySync;
+import mekanism.common.Mekanism;
 import mekanism.common.entity.EntityFlame;
 import mekanism.common.item.ItemFlamethrower;
 import mekanism.common.item.ItemFreeRunners;

@@ -12,6 +12,7 @@ import mekanism.api.TileNetworkList;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
 import mekanism.common.base.ILogisticalTransporter;
+import mekanism.common.base.NBTType;
 import mekanism.common.block.property.PropertyColor;
 import mekanism.common.block.states.BlockStateTransmitter.TransmitterType;
 import mekanism.common.capabilities.Capabilities;
@@ -165,52 +166,68 @@ public class TileEntityLogisticalTransporter extends TileEntityTransmitter<TileE
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) throws Exception {
-        if (FMLCommonHandler.instance().getSide().isClient()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
-                super.handlePacketData(dataStream);
-                tier = TransporterTier.values()[dataStream.readInt()];
-                int c = dataStream.readInt();
-                EnumColor prev = getTransmitter().getColor();
-                if (c != -1) {
-                    getTransmitter().setColor(TransporterUtils.colors.get(c));
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        switch (type) {
+            case ALL_SAVE:
+                super.writeNetworkNBT(tag, type);
+                tag.setInteger("tier", tier.ordinal());
+                getTransmitter().writeSaveNBT(tag);
+                break;
+            case TILE_UPDATE:
+                tag.setInteger("11", 0);
+                super.writeNetworkNBT(tag, type);
+                tag.setInteger("12", tier.ordinal());
+                if (getTransmitter().getColor() != null) {
+                    tag.setInteger("13", (TransporterUtils.colors.indexOf(getTransmitter().getColor())));
                 } else {
-                    getTransmitter().setColor(null);
+                    tag.setInteger("13", -1);
                 }
-                if (prev != getTransmitter().getColor()) {
-                    MekanismUtils.updateBlock(world, pos);
-                }
-                getTransmitter().readFromPacket(dataStream);
-            } else if (type == SYNC_PACKET) {
-                readStack(dataStream);
-            } else if (type == BATCH_PACKET) {
-                int updates = dataStream.readInt();
-                for (int i = 0; i < updates; i++) {
-                    readStack(dataStream);
-                }
-                int deletes = dataStream.readInt();
-                for (int i = 0; i < deletes; i++) {
-                    getTransmitter().deleteStack(dataStream.readInt());
-                }
-            }
+                getTransmitter().writeUpdateNBT(tag);
+                break;
         }
+        return tag;
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        data.add(0);
-        super.getNetworkedData(data);
-        data.add(tier.ordinal());
-        if (getTransmitter().getColor() != null) {
-            data.add(TransporterUtils.colors.indexOf(getTransmitter().getColor()));
-        } else {
-            data.add(-1);
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        switch (type) {
+            case ALL_SAVE:
+                super.readNetworkNBT(tag, type);
+                if (tag.hasKey("tier")) {
+                    tier = TransporterTier.values()[tag.getInteger("tier")];
+                }
+                getTransmitter().readSaveNBT(tag);
+                break;
+            case TILE_UPDATE:
+                int type2 = tag.getInteger("11");
+                if (type2 == 0) {
+                    super.readNetworkNBT(tag, type);
+                    tier = TransporterTier.values()[tag.getInteger("12")];
+                    int c = tag.getInteger("13");
+                    EnumColor prev = getTransmitter().getColor();
+                    if (c != -1) {
+                        getTransmitter().setColor(TransporterUtils.colors.get(c));
+                    } else {
+                        getTransmitter().setColor(null);
+                    }
+                    if (prev != getTransmitter().getColor()) {
+                        MekanismUtils.updateBlock(world, pos);
+                    }
+                    getTransmitter().readUpdateNBT(tag);
+                } else if (type2 == SYNC_PACKET) {
+                    readStack(dataStream);
+                } else if (type2 == BATCH_PACKET) {
+                    int updates = dataStream.readInt();
+                    for (int i = 0; i < updates; i++) {
+                        readStack(dataStream);
+                    }
+                    int deletes = dataStream.readInt();
+                    for (int i = 0; i < deletes; i++) {
+                        getTransmitter().deleteStack(dataStream.readInt());
+                    }
+                }
+                break;
         }
-
-        // Serialize all the in-flight stacks (this includes their ID)
-        getTransmitter().writeToPacket(data);
-        return data;
     }
 
     public TileNetworkList makeSyncPacket(int stackId, TransporterStack stack) {
@@ -250,42 +267,12 @@ public class TileEntityLogisticalTransporter extends TileEntityTransmitter<TileE
         getTransmitter().addStack(id, stack);
     }
 
-
-    @Override
-    public void readFromNBT(NBTTagCompound nbtTags) {
-        super.readFromNBT(nbtTags);
-        if (nbtTags.hasKey("tier")) {
-            tier = TransporterTier.values()[nbtTags.getInteger("tier")];
-        }
-        getTransmitter().readFromNBT(nbtTags);
-    }
-
-    @Nonnull
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
-        super.writeToNBT(nbtTags);
-        nbtTags.setInteger("tier", tier.ordinal());
-        if (getTransmitter().getColor() != null) {
-            nbtTags.setInteger("color", TransporterUtils.colors.indexOf(getTransmitter().getColor()));
-        }
-        NBTTagList stacks = new NBTTagList();
-        for (TransporterStack stack : getTransmitter().getTransit()) {
-            NBTTagCompound tagCompound = new NBTTagCompound();
-            stack.write(tagCompound);
-            stacks.appendTag(tagCompound);
-        }
-        if (stacks.tagCount() != 0) {
-            nbtTags.setTag("stacks", stacks);
-        }
-        return nbtTags;
-    }
-
     @Override
     protected EnumActionResult onConfigure(EntityPlayer player, int part, EnumFacing side) {
         TransporterUtils.incrementColor(getTransmitter());
         onPartChanged(null);
         PathfinderCache.onChanged(new Coord4D(getPos(), getWorld()));
-        Mekanism.packetHandler.sendUpdatePacket(this);
+        sendPackets();
         TextComponentGroup msg = new TextComponentGroup(TextFormatting.GRAY).string(Mekanism.LOG_TAG + " ", TextFormatting.DARK_BLUE)
               .translation("tooltip.configurator.toggleColor").string(": ");
 

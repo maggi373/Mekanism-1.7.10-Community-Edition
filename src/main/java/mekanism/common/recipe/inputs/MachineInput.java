@@ -2,7 +2,7 @@ package mekanism.common.recipe.inputs;
 
 import java.util.HashMap;
 import java.util.Map;
-import mekanism.common.OreDictCache;
+import mekanism.common.misc.OreDictCache;
 import mekanism.common.util.StackUtils;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;

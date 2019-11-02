@@ -1,19 +1,19 @@
 package mekanism.common.tile;
 
-import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
-import mekanism.api.TileNetworkList;
+
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
 import mekanism.api.gas.GasTankInfo;
 import mekanism.api.gas.IGasHandler;
 import mekanism.api.gas.IGasItem;
-import mekanism.common.MekanismFluids;
-import mekanism.common.Upgrade;
+import mekanism.common.registry.MekanismFluids;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.base.IComparatorSupport;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.base.ITankManager;
+import mekanism.common.base.NBTType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.recipe.RecipeHandler;
@@ -34,7 +34,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 
 public class TileEntityChemicalDissolutionChamber extends TileEntityMachine implements IGasHandler, ISustainedData, ITankManager, IComparatorSupport {
@@ -162,22 +161,24 @@ public class TileEntityChemicalDissolutionChamber extends TileEntityMachine impl
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            operatingTicks = dataStream.readInt();
-            TileUtils.readTankData(dataStream, injectTank);
-            TileUtils.readTankData(dataStream, outputTank);
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isTileUpdate()) {
+            tag.setInteger("1", operatingTicks);
+            TileUtils.addTankData("2", tag, injectTank);
+            TileUtils.addTankData("3", tag, outputTank);
         }
+        return tag;
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(operatingTicks);
-        TileUtils.addTankData(data, injectTank);
-        TileUtils.addTankData(data, outputTank);
-        return data;
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isTileUpdate()) {
+            operatingTicks = tag.getInteger("1");
+            TileUtils.readTankData("2", tag, injectTank);
+            TileUtils.readTankData("3", tag, outputTank);
+        }
     }
 
     @Override

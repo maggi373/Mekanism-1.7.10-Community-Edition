@@ -5,7 +5,7 @@ import java.util.EnumSet;
 import mekanism.api.TileNetworkList;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
-import mekanism.common.PacketHandler;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.tile.prefab.TileEntityBasicBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -21,6 +21,7 @@ public class TileUtils {
     // empty tag.
     private static final NBTTagCompound EMPTY_TAG_COMPOUND = new NBTTagCompound();
 
+    @Deprecated
     public static void addTankData(TileNetworkList data, GasTank tank) {
         if (tank.getGas() != null) {
             data.add(tank.getGas().write(new NBTTagCompound()));
@@ -29,10 +30,19 @@ public class TileUtils {
         }
     }
 
+    @Deprecated
+    public static void addTankData(NBTTagCompound tag, GasTank tank) {
+        if (tank.getGas() != null) {
+            tank.getGas().write(tag);
+        }
+    }
+
+    @Deprecated
     public static void addTankData(TileNetworkList data, FluidTank tank) {
         addFluidStack(data, tank.getFluid());
     }
 
+    @Deprecated
     public static void addFluidStack(TileNetworkList data, FluidStack stack) {
         if (stack != null) {
             data.add(stack.writeToNBT(new NBTTagCompound()));
@@ -41,9 +51,14 @@ public class TileUtils {
         }
     }
 
+    @Deprecated
     public static void readTankData(ByteBuf dataStream, GasTank tank) {
         tank.setGas(GasStack.readFromNBT(PacketHandler.readNBT(dataStream)));
     }
+
+    /**
+     * Use in tile update
+     */
 
     public static void readTankData(ByteBuf dataStream, FluidTank tank) {
         tank.setFluid(readFluidStack(dataStream));
@@ -52,6 +67,29 @@ public class TileUtils {
     public static FluidStack readFluidStack(ByteBuf dataStream) {
         return FluidStack.loadFluidStackFromNBT(PacketHandler.readNBT(dataStream));
     }
+
+
+
+    public static void addTankData(String id, NBTTagCompound tag, GasTank tank) {
+        NBTTagCompound tag1 = new NBTTagCompound();
+        tank.getGas().write(tag1);
+        tag.setTag(id, tag1);
+    }
+
+    public static void addTankData(String id, NBTTagCompound tag, FluidTank tank) {
+        NBTTagCompound tag1 = new NBTTagCompound();
+        tank.writeToNBT(tag1);
+        tag.setTag(id, tag1);
+    }
+
+    public static void readTankData(String id, NBTTagCompound tag, GasTank tank) {
+        tank.setGas(GasStack.readFromNBT(tag.getCompoundTag(id)));
+    }
+
+    public static void readTankData(String id, NBTTagCompound tag, FluidTank tank) {
+        tank.setFluid(FluidStack.loadFluidStackFromNBT(tag.getCompoundTag(id)));
+    }
+
 
 
     //Returns true if it entered the if statement, basically for use by TileEntityGasTank

@@ -7,7 +7,7 @@ import mekanism.api.TileNetworkList;
 import mekanism.client.gui.button.GuiButtonDisableableImage;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.client.sound.SoundHandler;
-import mekanism.common.HashList;
+import mekanism.common.misc.HashList;
 import mekanism.common.Mekanism;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.content.filter.IFilter;

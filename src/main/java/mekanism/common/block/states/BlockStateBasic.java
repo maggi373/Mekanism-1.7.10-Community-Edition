@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismBlocks;
+import mekanism.common.registry.MekanismBlocks;
 import mekanism.common.block.BlockBasic;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tile.TileEntityBin;

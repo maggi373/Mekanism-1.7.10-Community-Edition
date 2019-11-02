@@ -5,7 +5,7 @@ import java.util.UUID;
 import mekanism.api.Coord4D;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
-import mekanism.common.PacketHandler;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.base.ITileComponent;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.frequency.Frequency;

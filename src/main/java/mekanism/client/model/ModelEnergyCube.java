@@ -2,7 +2,7 @@ package mekanism.client.model;
 
 import mekanism.client.render.MekanismRenderer;
 import mekanism.client.render.MekanismRenderer.GlowInfo;
-import mekanism.common.SideData.IOState;
+import mekanism.common.misc.SideData.IOState;
 import mekanism.common.tier.EnergyCubeTier;
 import mekanism.common.util.MekanismUtils;
 import mekanism.common.util.MekanismUtils.ResourceType;

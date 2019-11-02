@@ -1,12 +1,10 @@
 package mekanism.common.tile;
 
-import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
-import mekanism.common.PacketHandler;
+import mekanism.common.base.NBTType;
 import mekanism.common.multiblock.IMultiblock;
 import mekanism.common.multiblock.IStructuralMultiblock;
 import mekanism.common.multiblock.MultiblockCache;
@@ -23,7 +21,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -119,7 +116,7 @@ public abstract class TileEntityMultiblock<T extends SynchronizedData<T>> extend
                     }
                 }
 
-                Mekanism.packetHandler.sendUpdatePacket(this);
+                sendPackets();
             }
 
             prevStructure = structure != null;
@@ -150,7 +147,7 @@ public abstract class TileEntityMultiblock<T extends SynchronizedData<T>> extend
             for (Coord4D obj : structure.locations) {
                 TileEntityMultiblock<T> tileEntity = (TileEntityMultiblock<T>) obj.getTileEntity(world);
                 if (tileEntity != null && tileEntity.isRendering) {
-                    Mekanism.packetHandler.sendUpdatePacket(tileEntity);
+                    sendPackets();
                 }
             }
         }
@@ -165,79 +162,72 @@ public abstract class TileEntityMultiblock<T extends SynchronizedData<T>> extend
     public abstract MultiblockManager<T> getManager();
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(isRendering);
-        data.add(structure != null);
-
-        if (structure != null && isRendering) {
-            if (sendStructure) {
-                sendStructure = false;
-
-                data.add(true);
-
-                data.add(structure.volHeight);
-                data.add(structure.volWidth);
-                data.add(structure.volLength);
-
-                structure.renderLocation.write(data);
-                data.add(structure.inventoryID != null);//boolean for if has inv id
-                if (structure.inventoryID != null) {
-                    data.add(structure.inventoryID);
-                }
-            } else {
-                data.add(false);
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isAllSave()) {
+            if (cachedID != null) {
+                tag.setString("cachedID", cachedID);
+                cachedData.save(tag);
             }
         }
-        return data;
+        if(type.isTileUpdate()) {
+            tag.setBoolean("1", isRendering);
+            tag.setBoolean("2", structure != null);
+
+            if (structure != null && isRendering) {
+                if (sendStructure) {
+                    sendStructure = false;
+
+                    tag.setBoolean("3", true);
+
+                    tag.setInteger("4", structure.volHeight);
+                    tag.setInteger("5", structure.volWidth);
+                    tag.setInteger("6", structure.volLength);
+
+                    structure.renderLocation.write(tag);
+                    tag.setBoolean("7", structure.inventoryID != null);
+                    if (structure.inventoryID != null) {
+                        tag.setString("8", structure.inventoryID);
+                    }
+                } else {
+                    tag.setBoolean("3", false);
+                }
+            }
+        }
+        return tag;
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isAllSave()) {
+            if (structure == null) {
+                if (tag.hasKey("cachedID")) {
+                    cachedID = tag.getString("cachedID");
+                    cachedData.load(tag);
+                }
+            }
+        }
+        if(type.isTileUpdate()) {
             if (structure == null) {
                 structure = getNewStructure();
             }
-
-            isRendering = dataStream.readBoolean();
-            clientHasStructure = dataStream.readBoolean();
+            isRendering = tag.getBoolean("1");
+            clientHasStructure = tag.getBoolean("2");
             if (clientHasStructure && isRendering) {
-                if (dataStream.readBoolean()) {
-                    structure.volHeight = dataStream.readInt();
-                    structure.volWidth = dataStream.readInt();
-                    structure.volLength = dataStream.readInt();
-                    structure.renderLocation = Coord4D.read(dataStream);
-                    if (dataStream.readBoolean()) {
-                        structure.inventoryID = PacketHandler.readString(dataStream);
+                if (tag.getBoolean("3")) {
+                    structure.volHeight = tag.getInteger("4");
+                    structure.volWidth = tag.getInteger("5");
+                    structure.volLength = tag.getInteger("6");
+                    structure.renderLocation = Coord4D.read(tag);
+                    if (tag.getBoolean("7")) {
+                        structure.inventoryID = tag.getString("8");
                     } else {
                         structure.inventoryID = null;
                     }
                 }
             }
         }
-    }
-
-    @Override
-    public void readFromNBT(NBTTagCompound nbtTags) {
-        super.readFromNBT(nbtTags);
-        if (structure == null) {
-            if (nbtTags.hasKey("cachedID")) {
-                cachedID = nbtTags.getString("cachedID");
-                cachedData.load(nbtTags);
-            }
-        }
-    }
-
-    @Nonnull
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
-        super.writeToNBT(nbtTags);
-        if (cachedID != null) {
-            nbtTags.setString("cachedID", cachedID);
-            cachedData.save(nbtTags);
-        }
-        return nbtTags;
     }
 
     @Override

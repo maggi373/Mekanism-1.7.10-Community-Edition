@@ -12,7 +12,7 @@ import mekanism.client.gui.button.GuiSideDataButton;
 import mekanism.client.gui.element.tab.GuiConfigTypeTab;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
-import mekanism.common.SideData;
+import mekanism.common.misc.SideData;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.inventory.container.ContainerNull;
 import mekanism.common.network.PacketConfigurationUpdate.ConfigurationPacket;

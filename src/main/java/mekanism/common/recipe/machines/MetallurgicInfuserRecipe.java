@@ -1,6 +1,6 @@
 package mekanism.common.recipe.machines;
 
-import mekanism.common.InfuseStorage;
+import mekanism.common.misc.InfuseStorage;
 import mekanism.common.recipe.inputs.InfusionInput;
 import mekanism.common.recipe.outputs.ItemStackOutput;
 import net.minecraft.item.ItemStack;

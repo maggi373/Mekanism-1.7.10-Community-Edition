@@ -1,4 +1,4 @@
-package mekanism.common;
+package mekanism.common.misc;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import mekanism.api.MekanismAPI;
+import mekanism.common.Mekanism;
 import net.minecraft.block.Block;
 
 public final class BoxBlacklistParser {

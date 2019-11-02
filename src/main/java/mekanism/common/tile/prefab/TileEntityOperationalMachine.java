@@ -1,15 +1,12 @@
 package mekanism.common.tile.prefab;
 
-import io.netty.buffer.ByteBuf;
-import javax.annotation.Nonnull;
-import mekanism.api.TileNetworkList;
-import mekanism.common.Upgrade;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.base.IComparatorSupport;
+import mekanism.common.base.NBTType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.inventory.Container;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 
 public abstract class TileEntityOperationalMachine extends TileEntityMachine implements IComparatorSupport {
 
@@ -29,34 +26,26 @@ public abstract class TileEntityOperationalMachine extends TileEntityMachine imp
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            operatingTicks = dataStream.readInt();
-            ticksRequired = dataStream.readInt();
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isAllSave() || type.isTileUpdate()) {
+            tag.setInteger("operatingTicks", operatingTicks);
         }
+        if(type.isTileUpdate()) {
+            tag.setInteger("ticksRequired", ticksRequired);
+        }
+        return tag;
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(operatingTicks);
-        data.add(ticksRequired);
-        return data;
-    }
-
-    @Override
-    public void readFromNBT(NBTTagCompound nbtTags) {
-        super.readFromNBT(nbtTags);
-        operatingTicks = nbtTags.getInteger("operatingTicks");
-    }
-
-    @Nonnull
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
-        super.writeToNBT(nbtTags);
-        nbtTags.setInteger("operatingTicks", operatingTicks);
-        return nbtTags;
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isAllSave() || type.isTileUpdate()) {
+            operatingTicks = tag.getInteger("operatingTicks");
+        }
+        if(type.isTileUpdate()) {
+            ticksRequired = tag.getInteger("ticksRequired");
+        }
     }
 
     @Override

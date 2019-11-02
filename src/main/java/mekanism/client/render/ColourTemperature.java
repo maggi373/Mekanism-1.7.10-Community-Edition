@@ -3,7 +3,7 @@ package mekanism.client.render;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import mekanism.api.IHeatTransfer;
-import mekanism.common.ColourRGBA;
+import mekanism.common.misc.ColourRGBA;
 
 public class ColourTemperature extends ColourRGBA {
 

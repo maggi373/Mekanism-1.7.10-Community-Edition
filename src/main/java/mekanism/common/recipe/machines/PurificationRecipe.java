@@ -1,6 +1,6 @@
 package mekanism.common.recipe.machines;
 
-import mekanism.common.MekanismFluids;
+import mekanism.common.registry.MekanismFluids;
 import mekanism.common.recipe.inputs.AdvancedMachineInput;
 import mekanism.common.recipe.outputs.ItemStackOutput;
 import net.minecraft.item.ItemStack;

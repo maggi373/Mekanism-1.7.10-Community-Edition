@@ -62,6 +62,7 @@ public class TransporterImpl extends TransmitterImpl<TileEntity, InventoryNetwor
         transit.put(id, s);
     }
 
+    @Deprecated
     public void writeToPacket(TileNetworkList data) {
         data.add(transit.size());
         for (Entry<Integer, TransporterStack> entry : transit.entrySet()) {
@@ -70,6 +71,7 @@ public class TransporterImpl extends TransmitterImpl<TileEntity, InventoryNetwor
         }
     }
 
+    @Deprecated
     public void readFromPacket(ByteBuf dataStream) {
         transit.clear();
         int count = dataStream.readInt();
@@ -80,15 +82,56 @@ public class TransporterImpl extends TransmitterImpl<TileEntity, InventoryNetwor
         }
     }
 
-    public void readFromNBT(NBTTagCompound nbtTags) {
-        if (nbtTags.hasKey("color")) {
-            setColor(TransporterUtils.colors.get(nbtTags.getInteger("color")));
+    public void readSaveNBT(NBTTagCompound tag) {
+        if (tag.hasKey("color")) {
+            setColor(TransporterUtils.colors.get(tag.getInteger("color")));
         }
-        if (nbtTags.hasKey("stacks")) {
-            NBTTagList tagList = nbtTags.getTagList("stacks", NBT.TAG_COMPOUND);
+        if (tag.hasKey("stacks")) {
+            NBTTagList tagList = tag.getTagList("stacks", NBT.TAG_COMPOUND);
             for (int i = 0; i < tagList.tagCount(); i++) {
                 TransporterStack stack = TransporterStack.readFromNBT(tagList.getCompoundTagAt(i));
                 transit.put(nextId++, stack);
+            }
+        }
+    }
+
+    public void writeSaveNBT(NBTTagCompound tag) {
+        if (getColor() != null) {
+            tag.setInteger("color", TransporterUtils.colors.indexOf(getColor()));
+        }
+        NBTTagList list = new NBTTagList();
+        for (TransporterStack stack : getTransit()) {
+            NBTTagCompound tagCompound = new NBTTagCompound();
+            stack.write(tagCompound);
+            list.appendTag(tagCompound);
+        }
+        if (list.tagCount() != 0) {
+            tag.setTag("stacks", list);
+        }
+    }
+
+    public void writeUpdateNBT(NBTTagCompound tag) {
+        NBTTagList list = new NBTTagList();
+        for (Entry<Integer, TransporterStack> entry : transit.entrySet()) {
+            NBTTagCompound tagCompound = new NBTTagCompound();
+            tagCompound.setInteger("id", entry.getKey());
+            entry.getValue().write(tagCompound);
+            list.appendTag(tagCompound);
+        }
+        if (list.tagCount() != 0) {
+            tag.setTag("stacks", list);
+        }
+    }
+
+    public void readUpdateNBT(NBTTagCompound tag) {
+        transit.clear();
+        if (tag.hasKey("stacks")) {
+            NBTTagList tagList = tag.getTagList("stacks", NBT.TAG_COMPOUND);
+            for (int i = 0; i < tagList.tagCount(); i++) {
+                NBTTagCompound tag1 = tagList.getCompoundTagAt(i);
+                int id = tag1.getInteger("id");
+                TransporterStack s = TransporterStack.readFromNBT(tag1);
+                transit.put(id, s);
             }
         }
     }

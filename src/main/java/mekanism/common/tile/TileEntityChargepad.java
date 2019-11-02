@@ -6,6 +6,7 @@ import java.util.Random;
 import javax.annotation.Nonnull;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.NBTType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.entity.EntityRobit;
 import mekanism.common.tile.prefab.TileEntityEffectsBlock;
@@ -106,42 +107,26 @@ public class TileEntityChargepad extends TileEntityEffectsBlock {
     public void setActive(boolean active) {
         isActive = active;
         if (clientActive != active) {
-            Mekanism.packetHandler.sendUpdatePacket(this);
+            sendPackets();
         }
         clientActive = active;
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound nbtTags) {
-        super.readFromNBT(nbtTags);
-        clientActive = isActive = nbtTags.getBoolean("isActive");
-    }
-
-    @Nonnull
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
-        super.writeToNBT(nbtTags);
-        nbtTags.setBoolean("isActive", isActive);
-        return nbtTags;
-    }
-
-    @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            clientActive = dataStream.readBoolean();
-            if (clientActive != isActive) {
-                isActive = clientActive;
-                MekanismUtils.updateBlock(world, getPos());
-            }
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isAllSave() || type.isTileUpdate()) {
+            tag.setBoolean("isActive", isActive);
         }
+        return tag;
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(isActive);
-        return data;
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isAllSave() || type.isTileUpdate()) {
+            clientActive = isActive = tag.getBoolean("isActive");
+        }
     }
 
     @Override

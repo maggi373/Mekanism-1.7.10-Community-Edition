@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import mekanism.client.jei.machine.MekanismRecipeWrapper;
-import mekanism.common.InfuseStorage;
+import mekanism.common.misc.InfuseStorage;
 import mekanism.common.recipe.machines.MetallurgicInfuserRecipe;
 import mezz.jei.api.ingredients.IIngredients;
 import mezz.jei.api.ingredients.VanillaTypes;

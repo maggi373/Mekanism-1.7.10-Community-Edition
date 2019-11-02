@@ -9,7 +9,7 @@ import mekanism.client.gui.filter.GuiTMaterialFilter;
 import mekanism.client.gui.filter.GuiTModIDFilter;
 import mekanism.client.gui.filter.GuiTOreDictFilter;
 import mekanism.common.Mekanism;
-import mekanism.common.PacketHandler;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.inventory.container.ContainerFilter;
 import mekanism.common.inventory.container.ContainerNull;
 import mekanism.common.network.PacketLogisticalSorterGui.LogisticalSorterGuiMessage;

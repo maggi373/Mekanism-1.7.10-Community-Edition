@@ -1,7 +1,7 @@
 package mekanism.common.base;
 
 import io.netty.buffer.ByteBuf;
-import mekanism.common.Version;
+import mekanism.common.misc.Version;
 import mekanism.common.config.MekanismConfig;
 
 /**

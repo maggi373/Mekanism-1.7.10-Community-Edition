@@ -1,4 +1,4 @@
-package mekanism.common;
+package mekanism.common.handler;
 
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
@@ -7,6 +7,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.Range4D;
+import mekanism.common.Mekanism;
 import mekanism.common.base.ITileNetwork;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.network.PacketBoxBlacklist;
@@ -97,9 +98,13 @@ public class PacketHandler {
     /**
      * Encodes an Object[] of data into a DataOutputStream.
      *
+     * WARNING: DO NOT USE ANYMORE, REALLY INEFFICIENT
+     * WARNING: DO NOT USE ANYMORE, REALLY INEFFICIENT
+     * WARNING: DO NOT USE ANYMORE, REALLY INEFFICIENT
      * @param dataValues - an Object[] of data to encode
      * @param output     - the output stream to write to
      */
+    @Deprecated
     public static void encode(Object[] dataValues, ByteBuf output) {
         for (Object data : dataValues) {
             if (data instanceof Byte) {
@@ -291,6 +296,7 @@ public class PacketHandler {
         }
     }
 
+    @Deprecated
     public <TILE extends TileEntity & ITileNetwork> void sendUpdatePacket(TILE tile) {
         sendToAllTracking(new TileEntityMessage(tile), tile);
     }

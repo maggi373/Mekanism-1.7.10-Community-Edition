@@ -1,5 +1,6 @@
-package mekanism.common;
+package mekanism.common.handler;
 
+import mekanism.common.Mekanism;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.network.PacketBoxBlacklist.BoxBlacklistMessage;
 import mekanism.common.network.PacketConfigSync.ConfigSyncMessage;

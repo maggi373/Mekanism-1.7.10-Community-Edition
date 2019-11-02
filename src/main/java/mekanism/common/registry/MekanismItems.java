@@ -1,5 +1,7 @@
-package mekanism.common;
+package mekanism.common.registry;
 
+import mekanism.common.Mekanism;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.item.ItemAlloy;
 import mekanism.common.item.ItemAtomicDisassembler;
 import mekanism.common.item.ItemBalloon;

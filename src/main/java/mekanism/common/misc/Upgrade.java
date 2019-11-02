@@ -1,4 +1,4 @@
-package mekanism.common;
+package mekanism.common.misc;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -9,6 +9,7 @@ import javax.annotation.Nullable;
 import mekanism.api.EnumColor;
 import mekanism.common.base.IUpgradeTile;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.registry.MekanismItems;
 import mekanism.common.util.LangUtils;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;

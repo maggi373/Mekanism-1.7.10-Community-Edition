@@ -3,7 +3,7 @@ package mekanism.common.content.tank;
 import java.util.List;
 import mekanism.api.Coord4D;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismBlocks;
+import mekanism.common.registry.MekanismBlocks;
 import mekanism.common.block.BlockBasic;
 import mekanism.common.block.states.BlockStateBasic.BasicBlockType;
 import mekanism.common.content.tank.SynchronizedTankData.ValveData;

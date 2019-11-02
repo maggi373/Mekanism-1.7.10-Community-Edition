@@ -164,7 +164,7 @@ public class BlockBounding extends Block {
     public void neighborChanged(IBlockState state, World world, BlockPos pos, Block neighborBlock, BlockPos neighborPos) {
         TileEntityBoundingBlock tileEntity = (TileEntityBoundingBlock) world.getTileEntity(pos);
         if (tileEntity != null) {
-            tileEntity.onNeighborChange(state.getBlock());
+            tileEntity.onNeighborChange();
         }
         BlockPos mainPos = getMainBlockPos(world, pos);
         if (mainPos != null) {

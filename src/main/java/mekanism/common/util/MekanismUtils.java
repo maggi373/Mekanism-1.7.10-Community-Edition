@@ -17,16 +17,17 @@ import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasStack;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismBlocks;
-import mekanism.common.MekanismFluids;
-import mekanism.common.SideData;
-import mekanism.common.Upgrade;
+import mekanism.common.registry.MekanismBlocks;
+import mekanism.common.registry.MekanismFluids;
+import mekanism.common.misc.SideData;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.base.IActiveState;
 import mekanism.common.base.IFactory;
 import mekanism.common.base.IFactory.RecipeType;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.base.IUpgradeTile;
+import mekanism.common.block.states.BlockStateBounding;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.block.states.BlockStateTransmitter.TransmitterType;
 import mekanism.common.config.MekanismConfig;
@@ -483,11 +484,10 @@ public final class MekanismUtils {
      * @param boundingLocation - coordinates of bounding block
      * @param orig             - original block
      */
+    @SuppressWarnings("ConstantConditions")
     public static void makeBoundingBlock(World world, BlockPos boundingLocation, Coord4D orig) {
-        world.setBlockState(boundingLocation, MekanismBlocks.BoundingBlock.getStateFromMeta(0));
-        if (!world.isRemote) {
-            ((TileEntityBoundingBlock) world.getTileEntity(boundingLocation)).setMainLocation(orig.getPos());
-        }
+        world.setBlockState(boundingLocation, MekanismBlocks.BoundingBlock.getDefaultState().withProperty(BlockStateBounding.advancedProperty, false));
+        ((TileEntityBoundingBlock) world.getTileEntity(boundingLocation)).setMainLocation(orig.getPos());
     }
 
     /**
@@ -497,11 +497,10 @@ public final class MekanismUtils {
      * @param boundingLocation - coordinates of bounding block
      * @param orig             - original block
      */
+    @SuppressWarnings("ConstantConditions")
     public static void makeAdvancedBoundingBlock(World world, BlockPos boundingLocation, Coord4D orig) {
-        world.setBlockState(boundingLocation, MekanismBlocks.BoundingBlock.getStateFromMeta(1));
-        if (!world.isRemote) {
-            ((TileEntityAdvancedBoundingBlock) world.getTileEntity(boundingLocation)).setMainLocation(orig.getPos());
-        }
+        world.setBlockState(boundingLocation, MekanismBlocks.BoundingBlock.getDefaultState().withProperty(BlockStateBounding.advancedProperty, true));
+        ((TileEntityAdvancedBoundingBlock) world.getTileEntity(boundingLocation)).setMainLocation(orig.getPos());
     }
 
     /**
@@ -650,8 +649,10 @@ public final class MekanismUtils {
      * @param tileEntity - TileEntity to save
      */
     public static void saveChunk(TileEntity tileEntity) {
-        if (tileEntity == null || tileEntity.isInvalid() || tileEntity.getWorld() == null) {
+        if (tileEntity == null || tileEntity.isInvalid()) {
             return;
+        } else {
+            tileEntity.getWorld();
         }
         tileEntity.getWorld().markChunkDirty(tileEntity.getPos(), tileEntity);
     }

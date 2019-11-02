@@ -1,4 +1,4 @@
-package mekanism.common;
+package mekanism.common.registry;
 
 import static mekanism.common.block.states.BlockStateBasic.BasicBlock.BASIC_BLOCK_1;
 import static mekanism.common.block.states.BlockStateBasic.BasicBlock.BASIC_BLOCK_2;
@@ -6,6 +6,7 @@ import static mekanism.common.block.states.BlockStateMachine.MachineBlock.MACHIN
 import static mekanism.common.block.states.BlockStateMachine.MachineBlock.MACHINE_BLOCK_2;
 import static mekanism.common.block.states.BlockStateMachine.MachineBlock.MACHINE_BLOCK_3;
 
+import mekanism.common.Mekanism;
 import mekanism.common.block.BlockBasic;
 import mekanism.common.block.BlockBounding;
 import mekanism.common.block.BlockCardboardBox;

@@ -73,7 +73,7 @@ public class TileEntityAmbientAccumulator extends TileEntityContainerBlock imple
         return new GasTankInfo[]{collectedGas};
     }
 
-    @Override
+    /*@Override
     public TileNetworkList getNetworkedData(TileNetworkList data) {
         TileUtils.addTankData(data, collectedGas);
         return data;
@@ -84,7 +84,7 @@ public class TileEntityAmbientAccumulator extends TileEntityContainerBlock imple
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             TileUtils.readTankData(data, collectedGas);
         }
-    }
+    }*/
 
     @Nonnull
     @Override

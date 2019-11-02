@@ -1,12 +1,12 @@
 package mekanism.common.tile.prefab;
 
-import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import mekanism.api.TileNetworkList;
-import mekanism.common.Upgrade;
+
+import mekanism.common.misc.Upgrade;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.IUpgradeTile;
+import mekanism.common.base.NBTType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tile.component.TileComponentSecurity;
@@ -14,7 +14,6 @@ import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 
 public abstract class TileEntityMachine extends TileEntityEffectsBlock implements IUpgradeTile, IRedstoneControl, ISecurityTile {
 
@@ -56,36 +55,28 @@ public abstract class TileEntityMachine extends TileEntityEffectsBlock implement
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            controlType = RedstoneControl.values()[dataStream.readInt()];
-            energyPerTick = dataStream.readDouble();
-            maxEnergy = dataStream.readDouble();
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isAllSave() || type.isTileUpdate()) {
+            tag.setInteger("controlType", controlType.ordinal());
         }
+        if(type.isTileUpdate()) {
+            tag.setDouble("energyPerTick", energyPerTick);
+            tag.setDouble("maxEnergy", maxEnergy);
+        }
+        return tag;
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(controlType.ordinal());
-        data.add(energyPerTick);
-        data.add(maxEnergy);
-        return data;
-    }
-
-    @Override
-    public void readFromNBT(NBTTagCompound nbtTags) {
-        super.readFromNBT(nbtTags);
-        controlType = RedstoneControl.values()[nbtTags.getInteger("controlType")];
-    }
-
-    @Nonnull
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
-        super.writeToNBT(nbtTags);
-        nbtTags.setInteger("controlType", controlType.ordinal());
-        return nbtTags;
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isAllSave() || type.isTileUpdate()) {
+            controlType = RedstoneControl.values()[tag.getInteger("controlType")];
+        }
+        if(type.isTileUpdate()) {
+            energyPerTick = tag.getDouble("energyPerTick");
+            maxEnergy = tag.getDouble("maxEnergy");
+        }
     }
 
     @Override

@@ -1,6 +1,8 @@
-package mekanism.common;
+package mekanism.common.misc;
 
 import javax.annotation.Nonnull;
+
+import mekanism.common.registry.MekanismItems;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.ItemStack;
 

@@ -6,8 +6,15 @@ import mekanism.api.TileNetworkList;
 /**
  * Internal interface used for blocks that send data between clients and the server
  *
+ * WARNING: DO NOT USE ANYMORE
+ * WARNING: DO NOT USE ANYMORE
+ * WARNING: DO NOT USE ANYMORE
+ * WARNING: DO NOT USE ANYMORE
+ * WARNING: DO NOT USE ANYMORE
+ * WARNING: DO NOT USE ANYMORE
  * @author AidanBrady
  */
+@Deprecated
 public interface ITileNetwork {
 
     /**

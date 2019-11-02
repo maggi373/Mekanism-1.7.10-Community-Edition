@@ -7,7 +7,7 @@ import mekanism.client.model.ModelEnergyCube.ModelEnergyCore;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.client.render.MekanismRenderer.GlowInfo;
 import mekanism.client.render.tileentity.RenderEnergyCube;
-import mekanism.common.SideData.IOState;
+import mekanism.common.misc.SideData.IOState;
 import mekanism.common.base.ITierItem;
 import mekanism.common.tier.EnergyCubeTier;
 import mekanism.common.util.ItemDataUtils;

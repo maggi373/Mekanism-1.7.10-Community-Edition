@@ -9,6 +9,7 @@ import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 import mekanism.api.TileNetworkList;
 import mekanism.common.base.IEnergyWrapper;
+import mekanism.common.base.NBTType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.capabilities.CapabilityWrapperManager;
 import mekanism.common.config.MekanismConfig;
@@ -124,18 +125,20 @@ public abstract class TileEntityElectricBlock extends TileEntityContainerBlock i
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            setEnergy(dataStream.readDouble());
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.writeNetworkNBT(tag, type);
+        if(type.isAllSave() || type.isTileUpdate()) {
+            tag.setDouble("electricityStored", getEnergy());
         }
+        return tag;
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(getEnergy());
-        return data;
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        super.readNetworkNBT(tag, type);
+        if(type.isAllSave() || type.isTileUpdate()) {
+            setEnergy(tag.getDouble("electricityStored"));
+        }
     }
 
     @Override
@@ -161,20 +164,6 @@ public abstract class TileEntityElectricBlock extends TileEntityContainerBlock i
         if (wasInvalid && MekanismUtils.useIC2()) {//re-register if we got invalidated
             register();
         }
-    }
-
-    @Override
-    public void readFromNBT(NBTTagCompound nbtTags) {
-        super.readFromNBT(nbtTags);
-        electricityStored = nbtTags.getDouble("electricityStored");
-    }
-
-    @Nonnull
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
-        super.writeToNBT(nbtTags);
-        nbtTags.setDouble("electricityStored", getEnergy());
-        return nbtTags;
     }
 
     /**

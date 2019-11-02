@@ -1,9 +1,11 @@
-package mekanism.common;
+package mekanism.common.registry;
 
 import java.util.Locale;
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasRegistry;
 import mekanism.api.gas.OreGas;
+import mekanism.common.Mekanism;
+import mekanism.common.misc.Resource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;

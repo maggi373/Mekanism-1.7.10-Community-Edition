@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import mekanism.api.gas.Gas;
-import mekanism.common.InfuseStorage;
+import mekanism.common.misc.InfuseStorage;
 import mekanism.common.Mekanism;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.recipe.RecipeHandler;

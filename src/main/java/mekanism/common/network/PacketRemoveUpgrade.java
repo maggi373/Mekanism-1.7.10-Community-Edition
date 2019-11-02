@@ -2,8 +2,8 @@ package mekanism.common.network;
 
 import io.netty.buffer.ByteBuf;
 import mekanism.api.Coord4D;
-import mekanism.common.PacketHandler;
-import mekanism.common.Upgrade;
+import mekanism.common.handler.PacketHandler;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.base.IUpgradeTile;
 import mekanism.common.network.PacketRemoveUpgrade.RemoveUpgradeMessage;
 import mekanism.common.tile.prefab.TileEntityBasicBlock;

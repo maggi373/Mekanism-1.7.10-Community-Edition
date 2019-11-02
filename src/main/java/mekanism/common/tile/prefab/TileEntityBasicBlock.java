@@ -1,47 +1,42 @@
 package mekanism.common.tile.prefab;
 
-import io.netty.buffer.ByteBuf;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.INetworkNBT;
 import mekanism.common.base.ITileComponent;
-import mekanism.common.base.ITileNetwork;
+import mekanism.common.base.NBTType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
-import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.frequency.Frequency;
 import mekanism.common.frequency.FrequencyManager;
 import mekanism.common.frequency.IFrequencyHandler;
 import mekanism.common.integration.MekanismHooks;
-import mekanism.common.network.PacketDataRequest.DataRequestMessage;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.security.ISecurityTile;
-import mekanism.common.util.MekanismUtils;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.NetworkManager;
+import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ITickable;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Optional.Interface;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 @Interface(iface = "ic2.api.tile.IWrenchable", modid = MekanismHooks.IC2_MOD_ID)
-public abstract class TileEntityBasicBlock extends TileEntity implements ITileNetwork, IFrequencyHandler, ITickable {
+public abstract class TileEntityBasicBlock extends TileEntity implements INetworkNBT, IFrequencyHandler, ITickable {
 
     /**
      * The direction this block is facing.
      */
     public EnumFacing facing = EnumFacing.NORTH;
-
-    public EnumFacing clientFacing = facing;
 
     /**
      * The players currently using this block.
@@ -63,36 +58,83 @@ public abstract class TileEntityBasicBlock extends TileEntity implements ITileNe
     @Override
     public void onLoad() {
         super.onLoad();
-        if (world.isRemote) {
-            Mekanism.packetHandler.sendToServer(new DataRequestMessage(Coord4D.get(this)));
-        }
-    }
-
-    @Override
-    public void update() {
         if (!world.isRemote && MekanismConfig.current().general.destroyDisabledBlocks.val()) {
             MachineType type = MachineType.get(getBlockType(), getBlockMetadata());
             if (type != null && !type.isEnabled()) {
                 Mekanism.logger.info("Destroying machine of type '" + type.getBlockName() + "' at coords " + Coord4D.get(this) + " as according to config.");
                 world.setBlockToAir(getPos());
-                return;
             }
         }
+    }
 
+    @Nullable
+    @Override
+    public SPacketUpdateTileEntity getUpdatePacket() {
+        return new SPacketUpdateTileEntity(pos, -1, writeNetworkNBT(new NBTTagCompound(), NBTType.TILE_UPDATE));
+    }
+
+    @Override
+    public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
+        readNetworkNBT(pkt.getNbtCompound(), NBTType.TILE_UPDATE);
+        world.markBlockRangeForRenderUpdate(pos, pos);
+    }
+
+    @Override
+    public void update() {
         for (ITileComponent component : components) {
             component.tick();
         }
-
         onUpdate();
         if (!world.isRemote) {
             if (doAutoSync && playersUsing.size() > 0) {
-                for (EntityPlayer player : playersUsing) {
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(this), (EntityPlayerMP) player);
-                }
+                sendPackets();
             }
         }
         ticker++;
         redstoneLastTick = redstone;
+    }
+
+    @Override
+    public final void readFromNBT(NBTTagCompound nbtTags) {
+        super.readFromNBT(nbtTags);
+        this.readNetworkNBT(nbtTags, NBTType.ALL_SAVE);
+    }
+
+    @Nonnull
+    @Override
+    public final NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
+        super.writeToNBT(nbtTags);
+        this.writeNetworkNBT(nbtTags, NBTType.ALL_SAVE);
+        return nbtTags;
+    }
+
+    @Override
+    public NBTTagCompound getUpdateTag() {
+        return writeToNBT(super.getUpdateTag());
+    }
+
+    @Override
+    public void handleUpdateTag(NBTTagCompound tag) {
+        readFromNBT(tag);
+    }
+
+    @Override
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        if(type.isAllSave() || type.isTileUpdate()) {
+            tag.setInteger("facing", facing.getIndex());
+            tag.setBoolean("redstone", redstone);
+            components.iterator().forEachRemaining(iTileComponent -> iTileComponent.write(tag));
+        }
+        return tag;
+    }
+
+    @Override
+    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
+        if(type.isAllSave() || type.isTileUpdate()) {
+            facing = EnumFacing.byIndex(tag.getInteger("facing"));
+            redstone = tag.getBoolean("redstone");
+            components.iterator().forEachRemaining(iTileComponent -> iTileComponent.read(tag));
+        }
     }
 
     @Override
@@ -110,44 +152,10 @@ public abstract class TileEntityBasicBlock extends TileEntity implements ITileNe
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            facing = EnumFacing.byIndex(dataStream.readInt());
-            redstone = dataStream.readBoolean();
-            if (clientFacing != facing) {
-                MekanismUtils.updateBlock(world, getPos());
-                world.notifyNeighborsOfStateChange(getPos(), world.getBlockState(getPos()).getBlock(), true);
-                clientFacing = facing;
-            }
-            for (ITileComponent component : components) {
-                component.read(dataStream);
-            }
-        }
-    }
-
-    @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        data.add(facing == null ? -1 : facing.ordinal());
-        data.add(redstone);
-        for (ITileComponent component : components) {
-            component.write(data);
-        }
-        return data;
-    }
-
-    @Override
     public void invalidate() {
         super.invalidate();
         for (ITileComponent component : components) {
             component.invalidate();
-        }
-    }
-
-    @Override
-    public void validate() {
-        super.validate();
-        if (world.isRemote) {
-            Mekanism.packetHandler.sendToServer(new DataRequestMessage(Coord4D.get(this)));
         }
     }
 
@@ -156,54 +164,18 @@ public abstract class TileEntityBasicBlock extends TileEntity implements ITileNe
      */
     public abstract void onUpdate();
 
-    @Override
-    public void readFromNBT(NBTTagCompound nbtTags) {
-        super.readFromNBT(nbtTags);
-        if (nbtTags.hasKey("facing")) {
-            facing = EnumFacing.byIndex(nbtTags.getInteger("facing"));
-        }
-        redstone = nbtTags.getBoolean("redstone");
-        for (ITileComponent component : components) {
-            component.read(nbtTags);
-        }
-    }
-
-    @Nonnull
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
-        super.writeToNBT(nbtTags);
-        if (facing != null) {
-            nbtTags.setInteger("facing", facing.ordinal());
-        }
-        nbtTags.setBoolean("redstone", redstone);
-        for (ITileComponent component : components) {
-            component.write(nbtTags);
-        }
-        return nbtTags;
-    }
-
-    @Override
-    public boolean hasCapability(@Nonnull Capability<?> capability, EnumFacing facing) {
-        return capability == Capabilities.TILE_NETWORK_CAPABILITY || super.hasCapability(capability, facing);
-    }
-
-    @Override
-    public <T> T getCapability(@Nonnull Capability<T> capability, EnumFacing facing) {
-        if (capability == Capabilities.TILE_NETWORK_CAPABILITY) {
-            return Capabilities.TILE_NETWORK_CAPABILITY.cast(this);
-        }
-        return super.getCapability(capability, facing);
-    }
-
     public void setFacing(@Nonnull EnumFacing direction) {
         if (canSetFacing(direction)) {
             facing = direction;
         }
-        if (facing != clientFacing && !world.isRemote) {
-            Mekanism.packetHandler.sendUpdatePacket(this);
-            markDirty();
-            clientFacing = facing;
+        if (!world.isRemote) {
+            sendPackets();
         }
+    }
+
+    public void sendPackets() {
+        IBlockState state = world.getBlockState(pos);
+        world.notifyBlockUpdate(pos, state, state, 3);
     }
 
     /**
@@ -225,8 +197,7 @@ public abstract class TileEntityBasicBlock extends TileEntity implements ITileNe
         return redstoneLastTick;
     }
 
-    public void onPowerChange() {
-    }
+    public void onPowerChange() { }
 
     public void onNeighborChange(Block block) {
         if (!world.isRemote) {
@@ -238,7 +209,7 @@ public abstract class TileEntityBasicBlock extends TileEntity implements ITileNe
         boolean power = world.getRedstonePowerFromNeighbors(getPos()) > 0;
         if (redstone != power) {
             redstone = power;
-            Mekanism.packetHandler.sendUpdatePacket(this);
+            sendPackets();
             onPowerChange();
         }
     }
@@ -256,22 +227,5 @@ public abstract class TileEntityBasicBlock extends TileEntity implements ITileNe
             return ((ISecurityTile) this).getSecurity().getFrequency();
         }
         return null;
-    }
-
-    @Nonnull
-    @Override
-    public NBTTagCompound getUpdateTag() {
-        // Forge writes only x/y/z/id info to a new NBT Tag Compound. This is fine, we have a custom network system
-        // to send other data so we don't use this one (yet).
-        return super.getUpdateTag();
-    }
-
-    @Override
-    public void handleUpdateTag(@Nonnull NBTTagCompound tag) {
-        // The super implementation of handleUpdateTag is to call this readFromNBT. But, the given TagCompound
-        // only has x/y/z/id data, so our readFromNBT will set a bunch of default values which are wrong.
-        // So simply call the super's readFromNBT, to let Forge do whatever it wants, but don't treat this like
-        // a full NBT object, don't pass it to our custom read methods.
-        super.readFromNBT(tag);
     }
 }

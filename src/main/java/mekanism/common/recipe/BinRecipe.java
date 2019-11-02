@@ -1,7 +1,7 @@
 package mekanism.common.recipe;
 
 import javax.annotation.Nonnull;
-import mekanism.common.MekanismItems;
+import mekanism.common.registry.MekanismItems;
 import mekanism.common.block.states.BlockStateBasic.BasicBlockType;
 import mekanism.common.inventory.InventoryBin;
 import mekanism.common.item.ItemProxy;
