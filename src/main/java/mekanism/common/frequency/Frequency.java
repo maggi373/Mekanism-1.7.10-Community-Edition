@@ -10,6 +10,7 @@ import mekanism.api.TileNetworkList;
 import mekanism.common.handler.PacketHandler;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 public class Frequency {
 
@@ -85,11 +86,11 @@ public class Frequency {
         publicFreq = nbtTags.getBoolean("publicFreq");
     }
 
-    public void write(TileNetworkList data) {
-        data.add(name);
-        data.add(ownerUUID.toString());
-        data.add(MekanismUtils.getLastKnownUsername(ownerUUID));
-        data.add(publicFreq);
+    public void write(ByteBuf buf) {
+        ByteBufUtils.writeUTF8String(buf, name);
+        ByteBufUtils.writeUTF8String(buf, ownerUUID.toString());
+        ByteBufUtils.writeUTF8String(buf, MekanismUtils.getLastKnownUsername(ownerUUID));
+        buf.writeBoolean(publicFreq);
     }
 
     protected void read(ByteBuf dataStream) {

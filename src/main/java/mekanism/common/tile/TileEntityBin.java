@@ -1,22 +1,19 @@
 package mekanism.common.tile;
 
-import javax.annotation.Nonnull;
-
+import io.netty.buffer.ByteBuf;
+import mekanism.api.Coord4D;
 import mekanism.api.IConfigurable;
+import mekanism.common.Mekanism;
 import mekanism.common.base.*;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.content.transporter.TransitRequest;
 import mekanism.common.content.transporter.TransitRequest.TransitResponse;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.item.ItemBlockBasic;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tier.BinTier;
 import mekanism.common.tile.prefab.TileEntityBasicBlock;
-import mekanism.common.util.CapabilityUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.LangUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.StackUtils;
-import mekanism.common.util.TransporterUtils;
+import mekanism.common.util.*;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.inventory.ISidedInventory;
@@ -29,9 +26,12 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
+
+import javax.annotation.Nonnull;
 
 public class TileEntityBin extends TileEntityBasicBlock implements ISidedInventory, IActiveState, IConfigurable, ITierUpgradeable, IComparatorSupport {
 
@@ -70,7 +70,7 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
             return false;
         }
         tier = BinTier.values()[upgradeTier.ordinal()];
-        sendPackets();
+        Mekanism.packetHandler.sendUpdatePacket(this);
         markDirty();
         return true;
     }
@@ -194,7 +194,7 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
 
             if (delayTicks == 0) {
                 if (!bottomStack.isEmpty() && isActive) {
-                    TileEntity tile = world.getTileEntity(pos.offset(EnumFacing.DOWN));
+                    TileEntity tile = Coord4D.get(this).offset(EnumFacing.DOWN).getTileEntity(world);
                     ILogisticalTransporter transporter = CapabilityUtils.getCapability(tile, Capabilities.LOGISTICAL_TRANSPORTER_CAPABILITY, EnumFacing.UP);
                     TransitResponse response;
                     if (transporter == null) {
@@ -214,40 +214,62 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
         }
     }
 
+    @Nonnull
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isAllSave()) {
-            tag.setTag("bottomStack", bottomStack.writeToNBT(new NBTTagCompound()));
-            tag.setTag("topStack", topStack.writeToNBT(new NBTTagCompound()));
-            tag.setTag("itemType", itemType.writeToNBT(new NBTTagCompound()));
+    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
+        super.writeToNBT(nbtTags);
+        nbtTags.setBoolean("isActive", isActive);
+        nbtTags.setInteger("itemCount", cacheCount);
+        nbtTags.setInteger("tier", tier.ordinal());
+        if (!bottomStack.isEmpty()) {
+            nbtTags.setTag("bottomStack", bottomStack.writeToNBT(new NBTTagCompound()));
         }
-        if(type.isAllSave() || type.isTileUpdate()) {
-            tag.setBoolean("isActive", isActive);
-            tag.setInteger("itemCount", cacheCount);
-            tag.setInteger("tier", tier.ordinal());
+        if (!topStack.isEmpty()) {
+            nbtTags.setTag("topStack", topStack.writeToNBT(new NBTTagCompound()));
         }
-        if(type.isTileUpdate()) {
-            itemType.writeToNBT(tag);
+        if (getItemCount() > 0) {
+            nbtTags.setTag("itemType", itemType.writeToNBT(new NBTTagCompound()));
         }
-        return tag;
+        return nbtTags;
     }
 
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isAllSave()) {
-            bottomStack = new ItemStack(tag.getCompoundTag("bottomStack"));
-            topStack = new ItemStack(tag.getCompoundTag("topStack"));
-            itemType = new ItemStack(tag.getCompoundTag("itemType"));
+    public void readFromNBT(NBTTagCompound nbtTags) {
+        super.readFromNBT(nbtTags);
+        clientActive = isActive = nbtTags.getBoolean("isActive");
+        cacheCount = nbtTags.getInteger("itemCount");
+        tier = BinTier.values()[nbtTags.getInteger("tier")];
+        bottomStack = new ItemStack(nbtTags.getCompoundTag("bottomStack"));
+        topStack = new ItemStack(nbtTags.getCompoundTag("topStack"));
+        if (getItemCount() > 0) {
+            itemType = new ItemStack(nbtTags.getCompoundTag("itemType"));
         }
-        if(type.isAllSave() || type.isTileUpdate()) {
-            clientActive = isActive = tag.getBoolean("isActive");
-            cacheCount = tag.getInteger("itemCount");
-            tier = BinTier.values()[tag.getInteger("tier")];
+    }
+
+    @Override
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        super.writePacket(buf, type);
+        buf.writeBoolean(isActive);
+        buf.writeInt(getItemCount());
+        buf.writeInt(tier.ordinal());
+        if(getItemCount() > 0) {
+            ByteBufUtils.writeItemStack(buf, itemType);
         }
-        if(type.isTileUpdate()) {
-            itemType = new ItemStack(tag);
+    }
+
+    @Override
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            clientActive = isActive = buf.readBoolean();
+            clientAmount = buf.readInt();
+            tier = BinTier.values()[buf.readInt()];
+            if (clientAmount > 0) {
+                itemType = PacketHandler.readStack(buf);
+            } else {
+                itemType = ItemStack.EMPTY;
+            }
+            MekanismUtils.updateBlock(world, getPos());
         }
     }
 
@@ -318,7 +340,7 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
         super.markDirty();
         if (!world.isRemote) {
             MekanismUtils.saveChunk(this);
-            sendPackets();
+            Mekanism.packetHandler.sendUpdatePacket(this);
             prevCount = getItemCount();
             sortStacks();
         }
@@ -437,7 +459,7 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
     public void setActive(boolean active) {
         isActive = active;
         if (clientActive != active) {
-            sendPackets();
+            Mekanism.packetHandler.sendUpdatePacket(this);
             clientActive = active;
         }
     }

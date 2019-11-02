@@ -1,16 +1,14 @@
 package mekanism.common.tile;
 
-import java.util.Map;
-import javax.annotation.Nonnull;
 import mekanism.api.EnumColor;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.registry.MekanismItems;
-import mekanism.common.misc.SideData;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
+import mekanism.common.misc.SideData;
 import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.inputs.ItemStackInput;
 import mekanism.common.recipe.machines.ChanceMachineRecipe;
 import mekanism.common.recipe.outputs.ChanceOutput;
+import mekanism.common.registry.MekanismItems;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.prefab.TileEntityUpgradeableMachine;
@@ -21,6 +19,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
+
+import javax.annotation.Nonnull;
+import java.util.Map;
 
 public abstract class TileEntityChanceMachine<RECIPE extends ChanceMachineRecipe<RECIPE>> extends TileEntityUpgradeableMachine<ItemStackInput, ChanceOutput, RECIPE> {
 

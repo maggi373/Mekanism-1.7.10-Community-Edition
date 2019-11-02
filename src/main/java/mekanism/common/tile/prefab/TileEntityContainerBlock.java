@@ -1,12 +1,10 @@
 package mekanism.common.tile.prefab;
 
-import javax.annotation.Nonnull;
-import mekanism.common.misc.Upgrade;
 import mekanism.common.base.ISustainedInventory;
 import mekanism.common.base.ItemHandlerWrapper;
-import mekanism.common.base.NBTType;
 import mekanism.common.capabilities.CapabilityWrapperManager;
 import mekanism.common.capabilities.IToggleableCapability;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.util.LangUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ISidedInventory;
@@ -24,6 +22,8 @@ import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
+
+import javax.annotation.Nonnull;
 
 public abstract class TileEntityContainerBlock extends TileEntityBasicBlock implements ISidedInventory, ISustainedInventory, ITickable, IToggleableCapability {
 
@@ -79,42 +79,40 @@ public abstract class TileEntityContainerBlock extends TileEntityBasicBlock impl
     }
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isAllSave()) {
-            if (handleInventory()) {
-                NBTTagList tagList = new NBTTagList();
-                for (int slotCount = 0; slotCount < getSizeInventory(); slotCount++) {
-                    ItemStack stackInSlot = getStackInSlot(slotCount);
-                    if (!stackInSlot.isEmpty()) {
-                        NBTTagCompound tagCompound = new NBTTagCompound();
-                        tagCompound.setByte("Slot", (byte) slotCount);
-                        stackInSlot.writeToNBT(tagCompound);
-                        tagList.appendTag(tagCompound);
-                    }
+    public void readFromNBT(NBTTagCompound nbtTags) {
+        super.readFromNBT(nbtTags);
+        if (handleInventory()) {
+            NBTTagList tagList = nbtTags.getTagList("Items", NBT.TAG_COMPOUND);
+            inventory = NonNullList.withSize(getSizeInventory(), ItemStack.EMPTY);
+            for (int tagCount = 0; tagCount < tagList.tagCount(); tagCount++) {
+                NBTTagCompound tagCompound = tagList.getCompoundTagAt(tagCount);
+                byte slotID = tagCompound.getByte("Slot");
+                if (slotID >= 0 && slotID < getSizeInventory()) {
+                    setInventorySlotContents(slotID, new ItemStack(tagCompound));
                 }
-                tag.setTag("Items", tagList);
             }
         }
-        return tag;
     }
 
+    @Nonnull
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isAllSave()) {
-            if (handleInventory()) {
-                NBTTagList tagList = tag.getTagList("Items", NBT.TAG_COMPOUND);
-                inventory = NonNullList.withSize(getSizeInventory(), ItemStack.EMPTY);
-                for (int tagCount = 0; tagCount < tagList.tagCount(); tagCount++) {
-                    NBTTagCompound tagCompound = tagList.getCompoundTagAt(tagCount);
-                    byte slotID = tagCompound.getByte("Slot");
-                    if (slotID >= 0 && slotID < getSizeInventory()) {
-                        setInventorySlotContents(slotID, new ItemStack(tagCompound));
-                    }
+    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
+        super.writeToNBT(nbtTags);
+
+        if (handleInventory()) {
+            NBTTagList tagList = new NBTTagList();
+            for (int slotCount = 0; slotCount < getSizeInventory(); slotCount++) {
+                ItemStack stackInSlot = getStackInSlot(slotCount);
+                if (!stackInSlot.isEmpty()) {
+                    NBTTagCompound tagCompound = new NBTTagCompound();
+                    tagCompound.setByte("Slot", (byte) slotCount);
+                    stackInSlot.writeToNBT(tagCompound);
+                    tagList.appendTag(tagCompound);
                 }
             }
+            nbtTags.setTag("Items", tagList);
         }
+        return nbtTags;
     }
 
     protected NonNullList<ItemStack> getInventory() {

@@ -1,37 +1,33 @@
 package mekanism.common.tile;
 
-import java.util.List;
-import javax.annotation.Nonnull;
-
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTank;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
-import mekanism.api.gas.IGasItem;
-import mekanism.common.misc.Upgrade;
-import mekanism.common.misc.Upgrade.IUpgradeInfoHandler;
-import mekanism.common.base.*;
+import io.netty.buffer.ByteBuf;
+import mekanism.api.TileNetworkList;
+import mekanism.api.gas.*;
+import mekanism.common.base.IRedstoneControl;
+import mekanism.common.base.ISustainedData;
+import mekanism.common.base.ITankManager;
+import mekanism.common.base.IUpgradeTile;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.inputs.ChemicalPairInput;
 import mekanism.common.recipe.machines.ChemicalInfuserRecipe;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tile.prefab.TileEntityMachine;
-import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.ItemDataUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.TileUtils;
+import mekanism.common.util.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
-public class TileEntityChemicalInfuser extends TileEntityMachine implements IGasHandler, IRedstoneControl, ISustainedData, IUpgradeTile, IUpgradeInfoHandler,
+import javax.annotation.Nonnull;
+import java.util.List;
+
+public class TileEntityChemicalInfuser extends TileEntityMachine implements IGasHandler, IRedstoneControl, ISustainedData, IUpgradeTile, Upgrade.IUpgradeInfoHandler,
       ITankManager, ISecurityTile {
 
     public static final int MAX_GAS = 10000;
@@ -112,26 +108,24 @@ public class TileEntityChemicalInfuser extends TileEntityMachine implements IGas
     }
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            tag.setDouble("1", clientEnergyUsed);
-            TileUtils.addTankData("2", tag, leftTank);
-            TileUtils.addTankData("3", tag, rightTank);
-            TileUtils.addTankData("4", tag, centerTank);
+    public void handlePacketData(ByteBuf dataStream) {
+        super.handlePacketData(dataStream);
+        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+            clientEnergyUsed = dataStream.readDouble();
+            TileUtils.readTankData(dataStream, leftTank);
+            TileUtils.readTankData(dataStream, rightTank);
+            TileUtils.readTankData(dataStream, centerTank);
         }
-        return tag;
     }
 
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            clientEnergyUsed = tag.getDouble("1");
-            TileUtils.readTankData("2", tag, leftTank);
-            TileUtils.readTankData("3", tag, rightTank);
-            TileUtils.readTankData("4", tag, centerTank);
-        }
+    public TileNetworkList getNetworkedData(TileNetworkList data) {
+        super.getNetworkedData(data);
+        data.add(clientEnergyUsed);
+        TileUtils.addTankData(data, leftTank);
+        TileUtils.addTankData(data, rightTank);
+        TileUtils.addTankData(data, centerTank);
+        return data;
     }
 
     @Override

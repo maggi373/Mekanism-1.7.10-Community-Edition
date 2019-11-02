@@ -1,18 +1,19 @@
 package mekanism.common.tile.prefab;
 
-import java.util.Objects;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.registry.MekanismBlocks;
-import mekanism.common.misc.Upgrade;
 import mekanism.common.base.IFactory.RecipeType;
 import mekanism.common.base.ITierUpgradeable;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.recipe.inputs.MachineInput;
 import mekanism.common.recipe.machines.MachineRecipe;
 import mekanism.common.recipe.outputs.MachineOutput;
+import mekanism.common.registry.MekanismBlocks;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tile.TileEntityFactory;
 import net.minecraft.util.ResourceLocation;
+
+import java.util.Objects;
 
 public abstract class TileEntityUpgradeableMachine<INPUT extends MachineInput<INPUT>, OUTPUT extends MachineOutput<OUTPUT>, RECIPE extends MachineRecipe<INPUT, OUTPUT, RECIPE>> extends
       TileEntityBasicMachine<INPUT, OUTPUT, RECIPE> implements ITierUpgradeable {
@@ -41,7 +42,7 @@ public abstract class TileEntityUpgradeableMachine<INPUT extends MachineInput<IN
 
         //Basic
         factory.facing = facing;
-        //factory.clientFacing = clientFacing;
+        factory.clientFacing = clientFacing;
         factory.ticker = ticker;
         factory.redstone = redstone;
         factory.redstoneLastTick = redstoneLastTick;

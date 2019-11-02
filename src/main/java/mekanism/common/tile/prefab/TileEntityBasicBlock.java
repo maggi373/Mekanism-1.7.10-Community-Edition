@@ -1,26 +1,30 @@
 package mekanism.common.tile.prefab;
 
+import io.netty.buffer.ByteBuf;
 import mekanism.api.Coord4D;
 import mekanism.common.Mekanism;
-import mekanism.common.base.INetworkNBT;
+import mekanism.common.base.ByteBufType;
+import mekanism.common.base.ITileByteBuf;
 import mekanism.common.base.ITileComponent;
-import mekanism.common.base.NBTType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
+import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.frequency.Frequency;
 import mekanism.common.frequency.FrequencyManager;
 import mekanism.common.frequency.IFrequencyHandler;
 import mekanism.common.integration.MekanismHooks;
+import mekanism.common.network.PacketByteBuf;
+import mekanism.common.network.PacketDataRequest.DataRequestMessage;
 import mekanism.common.security.ISecurityTile;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ITickable;
+import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fml.common.Optional.Interface;
 
 import javax.annotation.Nonnull;
@@ -31,12 +35,14 @@ import java.util.List;
 import java.util.Set;
 
 @Interface(iface = "ic2.api.tile.IWrenchable", modid = MekanismHooks.IC2_MOD_ID)
-public abstract class TileEntityBasicBlock extends TileEntity implements INetworkNBT, IFrequencyHandler, ITickable {
+public abstract class TileEntityBasicBlock extends TileEntity implements ITileByteBuf, IFrequencyHandler, ITickable {
 
     /**
      * The direction this block is facing.
      */
     public EnumFacing facing = EnumFacing.NORTH;
+
+    public EnumFacing clientFacing = facing;
 
     /**
      * The players currently using this block.
@@ -58,6 +64,9 @@ public abstract class TileEntityBasicBlock extends TileEntity implements INetwor
     @Override
     public void onLoad() {
         super.onLoad();
+        if (world.isRemote) {
+            Mekanism.packetHandler.sendToServer(new DataRequestMessage(Coord4D.get(this)));
+        }
         if (!world.isRemote && MekanismConfig.current().general.destroyDisabledBlocks.val()) {
             MachineType type = MachineType.get(getBlockType(), getBlockMetadata());
             if (type != null && !type.isEnabled()) {
@@ -67,74 +76,23 @@ public abstract class TileEntityBasicBlock extends TileEntity implements INetwor
         }
     }
 
-    @Nullable
-    @Override
-    public SPacketUpdateTileEntity getUpdatePacket() {
-        return new SPacketUpdateTileEntity(pos, -1, writeNetworkNBT(new NBTTagCompound(), NBTType.TILE_UPDATE));
-    }
-
-    @Override
-    public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
-        readNetworkNBT(pkt.getNbtCompound(), NBTType.TILE_UPDATE);
-        world.markBlockRangeForRenderUpdate(pos, pos);
-    }
-
     @Override
     public void update() {
+
         for (ITileComponent component : components) {
             component.tick();
         }
+
         onUpdate();
         if (!world.isRemote) {
             if (doAutoSync && playersUsing.size() > 0) {
-                sendPackets();
+                for (EntityPlayer player : playersUsing) {
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT), (EntityPlayerMP) player);
+                }
             }
         }
         ticker++;
         redstoneLastTick = redstone;
-    }
-
-    @Override
-    public final void readFromNBT(NBTTagCompound nbtTags) {
-        super.readFromNBT(nbtTags);
-        this.readNetworkNBT(nbtTags, NBTType.ALL_SAVE);
-    }
-
-    @Nonnull
-    @Override
-    public final NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
-        super.writeToNBT(nbtTags);
-        this.writeNetworkNBT(nbtTags, NBTType.ALL_SAVE);
-        return nbtTags;
-    }
-
-    @Override
-    public NBTTagCompound getUpdateTag() {
-        return writeToNBT(super.getUpdateTag());
-    }
-
-    @Override
-    public void handleUpdateTag(NBTTagCompound tag) {
-        readFromNBT(tag);
-    }
-
-    @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        if(type.isAllSave() || type.isTileUpdate()) {
-            tag.setInteger("facing", facing.getIndex());
-            tag.setBoolean("redstone", redstone);
-            components.iterator().forEachRemaining(iTileComponent -> iTileComponent.write(tag));
-        }
-        return tag;
-    }
-
-    @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        if(type.isAllSave() || type.isTileUpdate()) {
-            facing = EnumFacing.byIndex(tag.getInteger("facing"));
-            redstone = tag.getBoolean("redstone");
-            components.iterator().forEachRemaining(iTileComponent -> iTileComponent.read(tag));
-        }
     }
 
     @Override
@@ -152,10 +110,45 @@ public abstract class TileEntityBasicBlock extends TileEntity implements INetwor
     }
 
     @Override
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if (type == ByteBufType.SERVER_TO_CLIENT) {
+            facing = EnumFacing.byIndex(buf.readInt());
+            redstone = buf.readBoolean();
+            if (clientFacing != facing) {
+                MekanismUtils.updateBlock(world, getPos());
+                world.notifyNeighborsOfStateChange(getPos(), world.getBlockState(getPos()).getBlock(), true);
+                clientFacing = facing;
+            }
+            for (ITileComponent component : components) {
+                component.read(buf);
+            }
+        }
+    }
+
+    @Override
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        if (type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(facing == null ? -1 : facing.ordinal());
+            buf.writeBoolean(redstone);
+            for (ITileComponent component : components) {
+                component.write(buf);
+            }
+        }
+    }
+
+    @Override
     public void invalidate() {
         super.invalidate();
         for (ITileComponent component : components) {
             component.invalidate();
+        }
+    }
+
+    @Override
+    public void validate() {
+        super.validate();
+        if (world.isRemote) {
+            Mekanism.packetHandler.sendToServer(new DataRequestMessage(Coord4D.get(this)));
         }
     }
 
@@ -164,18 +157,41 @@ public abstract class TileEntityBasicBlock extends TileEntity implements INetwor
      */
     public abstract void onUpdate();
 
+    @Override
+    public void readFromNBT(NBTTagCompound nbtTags) {
+        super.readFromNBT(nbtTags);
+        if (nbtTags.hasKey("facing")) {
+            facing = EnumFacing.byIndex(nbtTags.getInteger("facing"));
+        }
+        redstone = nbtTags.getBoolean("redstone");
+        for (ITileComponent component : components) {
+            component.read(nbtTags);
+        }
+    }
+
+    @Nonnull
+    @Override
+    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
+        super.writeToNBT(nbtTags);
+        if (facing != null) {
+            nbtTags.setInteger("facing", facing.ordinal());
+        }
+        nbtTags.setBoolean("redstone", redstone);
+        for (ITileComponent component : components) {
+            component.write(nbtTags);
+        }
+        return nbtTags;
+    }
+
     public void setFacing(@Nonnull EnumFacing direction) {
         if (canSetFacing(direction)) {
             facing = direction;
         }
-        if (!world.isRemote) {
-            sendPackets();
+        if (facing != clientFacing && !world.isRemote) {
+            Mekanism.packetHandler.sendUpdatePacket(this);
+            markDirty();
+            clientFacing = facing;
         }
-    }
-
-    public void sendPackets() {
-        IBlockState state = world.getBlockState(pos);
-        world.notifyBlockUpdate(pos, state, state, 3);
     }
 
     /**
@@ -197,7 +213,8 @@ public abstract class TileEntityBasicBlock extends TileEntity implements INetwor
         return redstoneLastTick;
     }
 
-    public void onPowerChange() { }
+    public void onPowerChange() {
+    }
 
     public void onNeighborChange(Block block) {
         if (!world.isRemote) {
@@ -209,7 +226,7 @@ public abstract class TileEntityBasicBlock extends TileEntity implements INetwor
         boolean power = world.getRedstonePowerFromNeighbors(getPos()) > 0;
         if (redstone != power) {
             redstone = power;
-            sendPackets();
+            Mekanism.packetHandler.sendUpdatePacket(this);
             onPowerChange();
         }
     }
@@ -227,5 +244,36 @@ public abstract class TileEntityBasicBlock extends TileEntity implements INetwor
             return ((ISecurityTile) this).getSecurity().getFrequency();
         }
         return null;
+    }
+
+    @Override
+    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
+        return capability == Capabilities.TILE_BYTE_BUF || super.hasCapability(capability, facing);
+    }
+
+    @Nullable
+    @Override
+    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
+        if(capability == Capabilities.TILE_BYTE_BUF) {
+            return Capabilities.TILE_BYTE_BUF.cast(this);
+        }
+        return super.getCapability(capability, facing);
+    }
+
+    @Nonnull
+    @Override
+    public NBTTagCompound getUpdateTag() {
+        // Forge writes only x/y/z/id info to a new NBT Tag Compound. This is fine, we have a custom network system
+        // to send other data so we don't use this one (yet).
+        return super.getUpdateTag();
+    }
+
+    @Override
+    public void handleUpdateTag(@Nonnull NBTTagCompound tag) {
+        // The super implementation of handleUpdateTag is to call this readFromNBT. But, the given TagCompound
+        // only has x/y/z/id data, so our readFromNBT will set a bunch of default values which are wrong.
+        // So simply call the super's readFromNBT, to let Forge do whatever it wants, but don't treat this like
+        // a full NBT object, don't pass it to our custom read methods.
+        super.readFromNBT(tag);
     }
 }

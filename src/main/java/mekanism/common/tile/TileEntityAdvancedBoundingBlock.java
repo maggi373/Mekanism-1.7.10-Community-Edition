@@ -390,7 +390,7 @@ public class TileEntityAdvancedBoundingBlock extends TileEntityBoundingBlock imp
 
     @Override
     public boolean hasCapability(@Nonnull Capability<?> capability, EnumFacing facing) {
-        if (capability == Capabilities.TILE_NETWORK_CAPABILITY) {
+        if (capability == Capabilities.TILE_BYTE_BUF) {
             return super.hasCapability(capability, facing);
         }
         IAdvancedBoundingBlock inv = getInv();
@@ -402,7 +402,7 @@ public class TileEntityAdvancedBoundingBlock extends TileEntityBoundingBlock imp
 
     @Override
     public <T> T getCapability(@Nonnull Capability<T> capability, EnumFacing facing) {
-        if (capability == Capabilities.TILE_NETWORK_CAPABILITY) {
+        if (capability == Capabilities.TILE_BYTE_BUF) {
             return super.getCapability(capability, facing);
         }
         IAdvancedBoundingBlock inv = getInv();

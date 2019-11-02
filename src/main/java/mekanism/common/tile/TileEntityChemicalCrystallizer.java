@@ -1,22 +1,17 @@
 package mekanism.common.tile;
 
-import javax.annotation.Nonnull;
+import io.netty.buffer.ByteBuf;
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigCardAccess;
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTank;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
-import mekanism.api.gas.IGasItem;
+import mekanism.api.TileNetworkList;
+import mekanism.api.gas.*;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.misc.SideData;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.base.ITankManager;
-import mekanism.common.base.NBTType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.misc.SideData;
 import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.RecipeHandler.Recipe;
 import mekanism.common.recipe.inputs.GasInput;
@@ -24,16 +19,15 @@ import mekanism.common.recipe.machines.CrystallizerRecipe;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.prefab.TileEntityOperationalMachine;
-import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.ItemDataUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.TileUtils;
+import mekanism.common.util.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+
+import javax.annotation.Nonnull;
 
 public class TileEntityChemicalCrystallizer extends TileEntityOperationalMachine implements IGasHandler, ISideConfiguration, ISustainedData, ITankManager, IConfigCardAccess {
 
@@ -117,20 +111,18 @@ public class TileEntityChemicalCrystallizer extends TileEntityOperationalMachine
     }
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            TileUtils.addTankData("11", tag, inputTank);
+    public void handlePacketData(ByteBuf dataStream) {
+        super.handlePacketData(dataStream);
+        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+            TileUtils.readTankData(dataStream, inputTank);
         }
-        return tag;
     }
 
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            TileUtils.readTankData(tag.getCompoundTag("11"), inputTank);
-        }
+    public TileNetworkList getNetworkedData(TileNetworkList data) {
+        super.getNetworkedData(data);
+        TileUtils.addTankData(data, inputTank);
+        return data;
     }
 
     @Override

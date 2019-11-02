@@ -1,26 +1,19 @@
 package mekanism.common.transmitters;
 
 import io.netty.buffer.ByteBuf;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.EnumColor;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
 import mekanism.common.base.ILogisticalTransporter;
+import mekanism.common.base.NBTType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.content.transporter.TransitRequest;
 import mekanism.common.content.transporter.TransitRequest.TransitResponse;
 import mekanism.common.content.transporter.TransporterManager;
 import mekanism.common.content.transporter.TransporterStack;
 import mekanism.common.content.transporter.TransporterStack.Path;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
+import mekanism.common.network.PacketTileNBT;
 import mekanism.common.tile.TileEntityLogisticalSorter;
 import mekanism.common.tile.transmitter.TileEntityLogisticalTransporter;
 import mekanism.common.tile.transmitter.TileEntitySidedPipe.ConnectionType;
@@ -35,6 +28,10 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.util.Constants.NBT;
+
+import javax.annotation.Nonnull;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class TransporterImpl extends TransmitterImpl<TileEntity, InventoryNetwork, Void> implements ILogisticalTransporter {
 
@@ -71,7 +68,14 @@ public class TransporterImpl extends TransmitterImpl<TileEntity, InventoryNetwor
         }
     }
 
-    @Deprecated
+    public void writeToPacket(ByteBuf buf) {
+        buf.writeInt(transit.size());
+        for (Entry<Integer, TransporterStack> entry : transit.entrySet()) {
+            buf.writeInt(entry.getKey());
+            entry.getValue().write(this, buf);
+        }
+    }
+
     public void readFromPacket(ByteBuf dataStream) {
         transit.clear();
         int count = dataStream.readInt();
@@ -82,7 +86,7 @@ public class TransporterImpl extends TransmitterImpl<TileEntity, InventoryNetwor
         }
     }
 
-    public void readSaveNBT(NBTTagCompound tag) {
+    public void readFromNBT(NBTTagCompound tag) {
         if (tag.hasKey("color")) {
             setColor(TransporterUtils.colors.get(tag.getInteger("color")));
         }
@@ -218,7 +222,8 @@ public class TransporterImpl extends TransmitterImpl<TileEntity, InventoryNetwor
             }
 
             if (deletes.size() > 0 || needsSync.size() > 0) {
-                TileEntityMessage msg = new TileEntityMessage(coord, getTileEntity().makeBatchPacket(needsSync, deletes));
+                //TileEntityMessage msg = new TileEntityMessage(coord, getTileEntity().makeBatchPacket(needsSync, deletes));
+                PacketTileNBT.TileNBTMessage msg = new PacketTileNBT.TileNBTMessage(coord, getTileEntity().makeBatchPacketC(needsSync, deletes), NBTType.BATCH_PACKET);
                 // Now remove any entries from transit that have been deleted
                 deletes.forEach(id -> transit.remove(id));
 
@@ -282,7 +287,7 @@ public class TransporterImpl extends TransmitterImpl<TileEntity, InventoryNetwor
                 int stackId = nextId++;
                 transit.put(stackId, stack);
                 Coord4D coord = coord();
-                Mekanism.packetHandler.sendToAllTracking(new TileEntityMessage(coord, getTileEntity().makeSyncPacket(stackId, stack)), coord);
+                Mekanism.packetHandler.sendToAllTracking(new PacketTileNBT.TileNBTMessage(coord, getTileEntity().makeSyncPacketC(stackId, stack), NBTType.SYNC_PACKET), coord);
                 MekanismUtils.saveChunk(getTileEntity());
             }
             return response;

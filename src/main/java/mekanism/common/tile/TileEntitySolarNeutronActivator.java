@@ -1,27 +1,12 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.List;
-import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTank;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
-import mekanism.api.gas.IGasItem;
+import mekanism.api.gas.*;
 import mekanism.common.Mekanism;
-import mekanism.common.misc.Upgrade;
-import mekanism.common.misc.Upgrade.IUpgradeInfoHandler;
-import mekanism.common.base.IActiveState;
-import mekanism.common.base.IBoundingBlock;
-import mekanism.common.base.IComparatorSupport;
-import mekanism.common.base.IRedstoneControl;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.ITankManager;
-import mekanism.common.base.IUpgradeTile;
+import mekanism.common.base.*;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.inputs.GasInput;
 import mekanism.common.recipe.machines.SolarNeutronRecipe;
@@ -38,12 +23,14 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import javax.annotation.Nonnull;
+import java.util.List;
+
 public class TileEntitySolarNeutronActivator extends TileEntityContainerBlock implements IRedstoneControl, IBoundingBlock, IGasHandler, IActiveState, ISustainedData,
-      ITankManager, ISecurityTile, IUpgradeTile, IUpgradeInfoHandler, IComparatorSupport {
+      ITankManager, ISecurityTile, IUpgradeTile, Upgrade.IUpgradeInfoHandler, IComparatorSupport {
 
     public static final int MAX_GAS = 10000;
     private static final int[] INPUT_SLOT = {0};
@@ -143,24 +130,23 @@ public class TileEntitySolarNeutronActivator extends TileEntityContainerBlock im
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            isActive = dataStream.readBoolean();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
-            TileUtils.readTankData(dataStream, inputTank);
-            TileUtils.readTankData(dataStream, outputTank);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            isActive = buf.readBoolean();
+            controlType = RedstoneControl.values()[buf.readInt()];
+            TileUtils.readTankData(buf, inputTank);
+            TileUtils.readTankData(buf, outputTank);
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(isActive);
-        data.add(controlType.ordinal());
-        TileUtils.addTankData(data, inputTank);
-        TileUtils.addTankData(data, outputTank);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        super.writePacket(buf, type);
+        buf.writeBoolean(isActive);
+        buf.writeInt(controlType.ordinal());
+        TileUtils.addTankData(buf, inputTank);
+        TileUtils.addTankData(buf, outputTank);
     }
 
     @Override

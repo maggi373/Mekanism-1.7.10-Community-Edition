@@ -1,20 +1,12 @@
 package mekanism.common.tile.component;
 
 import io.netty.buffer.ByteBuf;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.annotation.Nonnull;
 import mekanism.api.EnumColor;
 import mekanism.api.TileNetworkList;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.misc.SideData;
-import mekanism.common.misc.SideData.IOState;
 import mekanism.common.base.ITileComponent;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.misc.SideData;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import mekanism.common.util.InventoryUtils;
 import mekanism.common.util.MekanismUtils;
@@ -23,6 +15,11 @@ import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
+
+import javax.annotation.Nonnull;
+import java.util.*;
+
+import static mekanism.common.misc.SideData.*;
 
 public class TileComponentConfig implements ITileComponent {
 
@@ -124,7 +121,7 @@ public class TileComponentConfig implements ITileComponent {
 
     public void setInputConfig(TransmissionType type) {
         addOutput(type, new SideData("None", EnumColor.GREY, IOState.OFF));
-        addOutput(type, new SideData("Input", EnumColor.DARK_GREEN, IOState.INPUT));
+        addOutput(type, new SideData("Input", EnumColor.DARK_GREEN, SideData.IOState.INPUT));
         fillConfig(type, 1);
         setCanEject(type, false);
     }
@@ -222,15 +219,14 @@ public class TileComponentConfig implements ITileComponent {
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        data.add(transmissions.size());
-
+    public void write(ByteBuf buf) {
+        buf.writeInt(transmissions.size());
         for (TransmissionType type : transmissions) {
-            data.add(type.ordinal());
+            buf.writeInt(type.ordinal());
         }
         for (TransmissionType type : transmissions) {
-            data.add(sideConfigs.get(type).asByteArray());
-            data.add(ejecting.get(type));
+            buf.writeBytes(sideConfigs.get(type).asByteArray());
+            buf.writeBoolean(ejecting.get(type));
         }
     }
 

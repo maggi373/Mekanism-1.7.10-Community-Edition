@@ -15,6 +15,7 @@ import mekanism.api.lasers.ILaserReceptor;
 import mekanism.api.transmitters.IBlockableConnection;
 import mekanism.api.transmitters.IGridTransmitter;
 import mekanism.common.base.ILogisticalTransporter;
+import mekanism.common.base.ITileByteBuf;
 import mekanism.common.base.ITileNetwork;
 import net.darkhax.tesla.api.ITeslaConsumer;
 import net.darkhax.tesla.api.ITeslaHolder;
@@ -72,8 +73,11 @@ public class Capabilities {
     @CapabilityInject(ILaserReceptor.class)
     public static Capability<ILaserReceptor> LASER_RECEPTOR_CAPABILITY = null;
 
-    @CapabilityInject(ITileNetwork.class)
-    public static Capability<ITileNetwork> TILE_NETWORK_CAPABILITY = null;
+    /*@CapabilityInject(ITileNetwork.class)
+    public static Capability<ITileNetwork> TILE_NETWORK_CAPABILITY = null;*/
+
+    @CapabilityInject(ITileByteBuf.class)
+    public static Capability<ITileByteBuf> TILE_BYTE_BUF = null;
 
     @CapabilityInject(ILogisticalTransporter.class)
     public static Capability<ILogisticalTransporter> LOGISTICAL_TRANSPORTER_CAPABILITY = null;
@@ -100,7 +104,8 @@ public class Capabilities {
         DefaultTubeConnection.register();
 
         DefaultConfigurable.register();
-        DefaultTileNetwork.register();
+        //DefaultTileNetwork.register();
+        DefaultTileByteBuf.register();
         DefaultAlloyInteraction.register();
         DefaultHeatTransfer.register();
         DefaultConfigCardAccess.register();

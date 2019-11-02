@@ -13,15 +13,13 @@ import mekanism.api.gas.GasTankInfo;
 import mekanism.api.gas.IGasHandler;
 import mekanism.api.gas.IGasItem;
 import mekanism.common.Mekanism;
-import mekanism.common.misc.Upgrade;
-import mekanism.common.misc.Upgrade.IUpgradeInfoHandler;
-import mekanism.common.base.FluidHandlerWrapper;
-import mekanism.common.base.IComparatorSupport;
-import mekanism.common.base.IFluidHandlerWrapper;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.ITankManager;
+import mekanism.common.Upgrade;
+import mekanism.common.Upgrade.IUpgradeInfoHandler;
+import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.misc.Upgrade;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.prefab.TileEntityMachine;
 import mekanism.common.util.ChargeUtils;
@@ -44,7 +42,7 @@ import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
-public class TileEntityRotaryCondensentrator extends TileEntityMachine implements ISustainedData, IFluidHandlerWrapper, IGasHandler, IUpgradeInfoHandler, ITankManager,
+public class TileEntityRotaryCondensentrator extends TileEntityMachine implements ISustainedData, IFluidHandlerWrapper, IGasHandler, Upgrade.IUpgradeInfoHandler, ITankManager,
       IComparatorSupport {
 
     private static final int[] GAS_SLOTS = {0, 1};
@@ -163,7 +161,7 @@ public class TileEntityRotaryCondensentrator extends TileEntityMachine implement
                 mode = mode == 0 ? 1 : 0;
             }
             for (EntityPlayer player : playersUsing) {
-                Mekanism.packetHandler.sendTo(new TileEntityMessage(this), (EntityPlayerMP) player);
+                Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT), (EntityPlayerMP) player);
             }
 
             return;

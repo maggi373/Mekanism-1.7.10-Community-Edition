@@ -11,7 +11,6 @@ import mekanism.api.TileNetworkList;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.misc.SideData;
 import mekanism.common.base.ILogisticalTransporter;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.base.ITankManager;
@@ -19,6 +18,7 @@ import mekanism.common.base.ITileComponent;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.content.transporter.TransitRequest;
 import mekanism.common.content.transporter.TransitRequest.TransitResponse;
+import mekanism.common.misc.SideData;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import mekanism.common.util.CapabilityUtils;
 import mekanism.common.util.GasUtils;
@@ -232,11 +232,11 @@ public class TileComponentEjector implements ITileComponent {
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        data.add(strictInput);
-        data.add(getColorIndex(outputColor));
+    public void write(ByteBuf buf) {
+        buf.writeBoolean(strictInput);
+        buf.writeInt(getColorIndex(outputColor));
         for (int i = 0; i < 6; i++) {
-            data.add(getColorIndex(inputColors[i]));
+            buf.writeInt(getColorIndex(inputColors[i]));
         }
     }
 

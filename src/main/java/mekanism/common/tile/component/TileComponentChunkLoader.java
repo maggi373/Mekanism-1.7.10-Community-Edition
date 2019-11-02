@@ -1,16 +1,13 @@
 package mekanism.common.tile.component;
 
 import io.netty.buffer.ByteBuf;
-import java.util.HashSet;
-import java.util.Set;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
-import mekanism.common.misc.Upgrade;
 import mekanism.common.base.ITileComponent;
 import mekanism.common.base.IUpgradeTile;
 import mekanism.common.chunkloading.IChunkLoader;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import mekanism.common.util.MekanismUtils;
@@ -21,6 +18,9 @@ import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.ForgeChunkManager.Ticket;
 import net.minecraftforge.common.ForgeChunkManager.Type;
 import net.minecraftforge.common.util.Constants.NBT;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class TileComponentChunkLoader implements ITileComponent {
 
@@ -157,7 +157,8 @@ public class TileComponentChunkLoader implements ITileComponent {
     }
 
     @Override
-    public void write(TileNetworkList data) {
+    public void write(ByteBuf buf) {
+
     }
 
     @Override

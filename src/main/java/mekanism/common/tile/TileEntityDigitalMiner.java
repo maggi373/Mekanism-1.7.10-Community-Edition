@@ -16,9 +16,9 @@ import mekanism.api.Chunk3D;
 import mekanism.api.Coord4D;
 import mekanism.api.Range4D;
 import mekanism.api.TileNetworkList;
-import mekanism.common.misc.HashList;
+import mekanism.common.HashList;
 import mekanism.common.Mekanism;
-import mekanism.common.misc.Upgrade;
+import mekanism.common.Upgrade;
 import mekanism.common.base.IActiveState;
 import mekanism.common.base.IAdvancedBoundingBlock;
 import mekanism.common.base.ILogisticalTransporter;
@@ -39,6 +39,8 @@ import mekanism.common.content.transporter.TransitRequest;
 import mekanism.common.content.transporter.TransitRequest.TransitResponse;
 import mekanism.common.inventory.container.ContainerFilter;
 import mekanism.common.inventory.container.ContainerNull;
+import mekanism.common.misc.HashList;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.component.TileComponentChunkLoader;
 import mekanism.common.tile.component.TileComponentSecurity;
@@ -521,7 +523,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
     public void openInventory(@Nonnull EntityPlayer player) {
         super.openInventory(player);
         if (!world.isRemote) {
-            sendPackets();
+            Mekanism.packetHandler.sendTo(new TileEntityMessage(this), (EntityPlayerMP) player);
         }
     }
 

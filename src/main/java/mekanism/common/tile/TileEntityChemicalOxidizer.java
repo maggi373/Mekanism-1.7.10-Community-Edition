@@ -11,7 +11,6 @@ import mekanism.api.gas.IGasHandler;
 import mekanism.api.gas.IGasItem;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.base.ITankManager;
-import mekanism.common.base.NBTType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.recipe.RecipeHandler;
@@ -123,20 +122,18 @@ public class TileEntityChemicalOxidizer extends TileEntityOperationalMachine imp
     }
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            TileUtils.addTankData("1", tag, gasTank);
+    public void handlePacketData(ByteBuf dataStream) {
+        super.handlePacketData(dataStream);
+        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+            TileUtils.readTankData(dataStream, gasTank);
         }
-        return tag;
     }
 
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            TileUtils.readTankData("1", tag, gasTank);
-        }
+    public TileNetworkList getNetworkedData(TileNetworkList data) {
+        super.getNetworkedData(data);
+        TileUtils.addTankData(data, gasTank);
+        return data;
     }
 
     @Override

@@ -8,63 +8,37 @@ import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.Range4D;
 import mekanism.common.Mekanism;
-import mekanism.common.base.ITileNetwork;
+import mekanism.common.base.ByteBufType;
+import mekanism.common.base.ITileByteBuf;
 import mekanism.common.config.MekanismConfig;
-import mekanism.common.network.PacketBoxBlacklist;
+import mekanism.common.network.*;
 import mekanism.common.network.PacketBoxBlacklist.BoxBlacklistMessage;
-import mekanism.common.network.PacketConfigSync;
 import mekanism.common.network.PacketConfigSync.ConfigSyncMessage;
-import mekanism.common.network.PacketConfigurationUpdate;
 import mekanism.common.network.PacketConfigurationUpdate.ConfigurationUpdateMessage;
-import mekanism.common.network.PacketContainerEditMode;
 import mekanism.common.network.PacketContainerEditMode.ContainerEditModeMessage;
-import mekanism.common.network.PacketDataRequest;
 import mekanism.common.network.PacketDataRequest.DataRequestMessage;
-import mekanism.common.network.PacketDigitalMinerGui;
 import mekanism.common.network.PacketDigitalMinerGui.DigitalMinerGuiMessage;
-import mekanism.common.network.PacketDropperUse;
 import mekanism.common.network.PacketDropperUse.DropperUseMessage;
-import mekanism.common.network.PacketEditFilter;
 import mekanism.common.network.PacketEditFilter.EditFilterMessage;
-import mekanism.common.network.PacketEntityMove;
 import mekanism.common.network.PacketEntityMove.EntityMoveMessage;
-import mekanism.common.network.PacketFlamethrowerData;
 import mekanism.common.network.PacketFlamethrowerData.FlamethrowerDataMessage;
-import mekanism.common.network.PacketFreeRunnerData;
 import mekanism.common.network.PacketFreeRunnerData.FreeRunnerDataMessage;
-import mekanism.common.network.PacketItemStack;
 import mekanism.common.network.PacketItemStack.ItemStackMessage;
-import mekanism.common.network.PacketJetpackData;
 import mekanism.common.network.PacketJetpackData.JetpackDataMessage;
-import mekanism.common.network.PacketKey;
 import mekanism.common.network.PacketKey.KeyMessage;
-import mekanism.common.network.PacketLogisticalSorterGui;
 import mekanism.common.network.PacketLogisticalSorterGui.LogisticalSorterGuiMessage;
-import mekanism.common.network.PacketNewFilter;
 import mekanism.common.network.PacketNewFilter.NewFilterMessage;
-import mekanism.common.network.PacketOredictionificatorGui;
 import mekanism.common.network.PacketOredictionificatorGui.OredictionificatorGuiMessage;
-import mekanism.common.network.PacketPortableTeleporter;
 import mekanism.common.network.PacketPortableTeleporter.PortableTeleporterMessage;
-import mekanism.common.network.PacketPortalFX;
 import mekanism.common.network.PacketPortalFX.PortalFXMessage;
-import mekanism.common.network.PacketRedstoneControl;
 import mekanism.common.network.PacketRedstoneControl.RedstoneControlMessage;
-import mekanism.common.network.PacketRemoveUpgrade;
 import mekanism.common.network.PacketRemoveUpgrade.RemoveUpgradeMessage;
-import mekanism.common.network.PacketRobit;
 import mekanism.common.network.PacketRobit.RobitMessage;
-import mekanism.common.network.PacketScubaTankData;
 import mekanism.common.network.PacketScubaTankData.ScubaTankDataMessage;
-import mekanism.common.network.PacketSecurityMode;
 import mekanism.common.network.PacketSecurityMode.SecurityModeMessage;
-import mekanism.common.network.PacketSecurityUpdate;
 import mekanism.common.network.PacketSecurityUpdate.SecurityUpdateMessage;
-import mekanism.common.network.PacketSimpleGui;
 import mekanism.common.network.PacketSimpleGui.SimpleGuiMessage;
-import mekanism.common.network.PacketTileEntity;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
-import mekanism.common.network.PacketTransmitterUpdate;
 import mekanism.common.network.PacketTransmitterUpdate.TransmitterUpdateMessage;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -228,6 +202,10 @@ public class PacketHandler {
         netHandler.registerMessage(PacketSecurityUpdate.class, SecurityUpdateMessage.class, 30, Side.CLIENT);
         netHandler.registerMessage(PacketFreeRunnerData.class, FreeRunnerDataMessage.class, 31, Side.CLIENT);
         netHandler.registerMessage(PacketFreeRunnerData.class, FreeRunnerDataMessage.class, 31, Side.SERVER);
+        netHandler.registerMessage(PacketTileNBT.class, PacketTileNBT.TileNBTMessage.class, 32, Side.CLIENT);
+
+        netHandler.registerMessage(PacketByteBuf.class, PacketByteBuf.ByteBufMessage.class, 33, Side.CLIENT);
+        netHandler.registerMessage(PacketByteBuf.class, PacketByteBuf.ByteBufMessage.class, 34, Side.SERVER);
     }
 
     /**
@@ -296,9 +274,8 @@ public class PacketHandler {
         }
     }
 
-    @Deprecated
-    public <TILE extends TileEntity & ITileNetwork> void sendUpdatePacket(TILE tile) {
-        sendToAllTracking(new TileEntityMessage(tile), tile);
+    public <TILE extends TileEntity & ITileByteBuf> void sendUpdatePacket(TILE tile) {
+        sendToAllTracking(new PacketByteBuf.ByteBufMessage(tile, ByteBufType.SERVER_TO_CLIENT), tile);
     }
 
     public void sendToAllTracking(IMessage message, TileEntity tile) {

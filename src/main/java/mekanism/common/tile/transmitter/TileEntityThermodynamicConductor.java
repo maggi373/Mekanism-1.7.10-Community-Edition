@@ -1,15 +1,13 @@
 package mekanism.common.tile.transmitter;
 
 import io.netty.buffer.ByteBuf;
-import java.util.Collection;
-import javax.annotation.Nonnull;
 import mekanism.api.IHeatTransfer;
-import mekanism.api.TileNetworkList;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.misc.ColourRGBA;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.block.states.BlockStateTransmitter.TransmitterType;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.misc.ColourRGBA;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tier.ConductorTier;
 import mekanism.common.transmitters.grid.HeatNetwork;
@@ -20,6 +18,9 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.capabilities.Capability;
+
+import javax.annotation.Nonnull;
+import java.util.Collection;
 
 public class TileEntityThermodynamicConductor extends TileEntityTransmitter<IHeatTransfer, HeatNetwork, Void> implements IHeatTransfer {
 
@@ -118,18 +119,17 @@ public class TileEntityThermodynamicConductor extends TileEntityTransmitter<IHea
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) throws Exception {
-        tier = ConductorTier.values()[dataStream.readInt()];
-        super.handlePacketData(dataStream);
-        temperature = dataStream.readDouble();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        tier = ConductorTier.values()[buf.readInt()];
+        super.readPacket(buf, type);
+        temperature = buf.readDouble();
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        data.add(tier.ordinal());
-        super.getNetworkedData(data);
-        data.add(temperature);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        buf.writeInt(tier.ordinal());
+        super.writePacket(buf, type);
+        buf.writeDouble(temperature);
     }
 
     public ColourRGBA getBaseColour() {

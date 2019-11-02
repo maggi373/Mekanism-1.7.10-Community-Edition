@@ -10,11 +10,11 @@ public interface ITileComponent {
 
     void read(NBTTagCompound nbtTags);
 
-    void read(ByteBuf dataStream);
+    void read(ByteBuf buf);
 
     void write(NBTTagCompound nbtTags);
 
-    void write(TileNetworkList data);
+    void write(ByteBuf buf);
 
     void invalidate();
 }

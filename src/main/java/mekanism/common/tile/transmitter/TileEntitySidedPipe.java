@@ -9,14 +9,12 @@ import mcmultipart.api.multipart.IMultipart;
 import mekanism.api.Coord4D;
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigurable;
-import mekanism.api.TileNetworkList;
 import mekanism.api.transmitters.IBlockableConnection;
 import mekanism.api.transmitters.ITransmitter;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
-import mekanism.common.base.INetworkNBT;
-import mekanism.common.base.ITileNetwork;
-import mekanism.common.base.NBTType;
+import mekanism.common.base.ByteBufType;
+import mekanism.common.base.ITileByteBuf;
 import mekanism.common.block.BlockTransmitter;
 import mekanism.common.block.property.PropertyConnection;
 import mekanism.common.block.states.BlockStateTransmitter.TransmitterType;
@@ -48,10 +46,9 @@ import net.minecraftforge.client.model.obj.OBJModel.OBJProperty;
 import net.minecraftforge.client.model.obj.OBJModel.OBJState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.property.IExtendedBlockState;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
-public abstract class TileEntitySidedPipe extends TileEntity implements INetworkNBT, IBlockableConnection, IConfigurable, ITransmitter, ITickable {
+public abstract class TileEntitySidedPipe extends TileEntity implements ITileByteBuf, IBlockableConnection, IConfigurable, ITransmitter, ITickable {
 
     public int delayTicks;
 
@@ -104,15 +101,10 @@ public abstract class TileEntitySidedPipe extends TileEntity implements INetwork
                 forceUpdate = false;
             }
             if (sendDesc) {
-                sendPackets();
+                Mekanism.packetHandler.sendUpdatePacket(this);
                 sendDesc = false;
             }
         }
-    }
-
-    public void sendPackets() {
-        IBlockState state = world.getBlockState(pos);
-        world.notifyBlockUpdate(pos, state, state, 3);
     }
 
     public BaseTier getBaseTier() {
@@ -296,13 +288,13 @@ public abstract class TileEntitySidedPipe extends TileEntity implements INetwork
         return true;
     }
 
-    /*@Override
-    public void handlePacketData(ByteBuf dataStream) throws Exception {
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            currentTransmitterConnections = dataStream.readByte();
-            currentAcceptorConnections = dataStream.readByte();
+    @Override
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            currentTransmitterConnections = buf.readByte();
+            currentAcceptorConnections = buf.readByte();
             for (int i = 0; i < 6; i++) {
-                connectionTypes[i] = ConnectionType.values()[dataStream.readInt()];
+                connectionTypes[i] = ConnectionType.values()[buf.readInt()];
             }
             markDirty();
             MekanismUtils.updateBlock(world, pos);
@@ -310,83 +302,43 @@ public abstract class TileEntitySidedPipe extends TileEntity implements INetwork
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
+    public void writePacket(ByteBuf buf, ByteBufType type) {
         if (Mekanism.hooks.MCMPLoaded) {
-            MultipartTileNetworkJoiner.addMultipartHeader(this, data, null);
+            MultipartTileNetworkJoiner.addMultipartHeader(this, buf, null);
         }
-        data.add(currentTransmitterConnections);
-        data.add(currentAcceptorConnections);
+        buf.writeByte(currentTransmitterConnections);
+        buf.writeByte(currentAcceptorConnections);
         for (int i = 0; i < 6; i++) {
-            data.add(connectionTypes[i].ordinal());
-        }
-        return data;
-    }*/
-
-    @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        switch (type) {
-            case ALL_SAVE:
-                tag.setBoolean("redstoneReactive", redstoneReactive);
-                for (int i = 0; i < 6; i++) {
-                    tag.setInteger("connection" + i, connectionTypes[i].ordinal());
-                }
-                break;
-            case TILE_UPDATE:
-                //tag.setInteger("tier", getBaseTier().ordinal());
-                if(!(Mekanism.hooks.MCMPLoaded && MultipartTileNetworkJoiner.addMultipartHeader("h", tag, this, null))) {
-                    tag.setByte("h", currentTransmitterConnections);
-                }
-                tag.setByte("2", currentAcceptorConnections);
-                for (int i = 0; i < 6; i++) {
-                    tag.setInteger("3c"+i, connectionTypes[i].ordinal());
-                }
-                break;
-        }
-        return tag;
-    }
-
-    @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        switch (type) {
-            case ALL_SAVE:
-                redstoneReactive = tag.getBoolean("redstoneReactive");
-                for (int i = 0; i < 6; i++) {
-                    connectionTypes[i] = ConnectionType.values()[tag.getInteger("connection" + i)];
-                }
-                break;
-            case TILE_UPDATE:
-                currentTransmitterConnections = tag.getByte("h");
-                currentAcceptorConnections = tag.getByte("2");
-                for (int i = 0; i < 6; i++) {
-                    connectionTypes[i] = ConnectionType.values()[tag.getInteger("3c"+i)];
-                }
-                break;
+            buf.writeInt(connectionTypes[i].ordinal());
         }
     }
 
     @Override
-    public final void readFromNBT(NBTTagCompound nbtTags) {
+    public void readFromNBT(NBTTagCompound nbtTags) {
         super.readFromNBT(nbtTags);
-        readNetworkNBT(nbtTags, NBTType.ALL_SAVE);
+        redstoneReactive = nbtTags.getBoolean("redstoneReactive");
+        for (int i = 0; i < 6; i++) {
+            connectionTypes[i] = ConnectionType.values()[nbtTags.getInteger("connection" + i)];
+        }
     }
 
     @Nonnull
     @Override
-    public final NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
+    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
         super.writeToNBT(nbtTags);
-        writeNetworkNBT(nbtTags, NBTType.ALL_SAVE);
+        nbtTags.setBoolean("redstoneReactive", redstoneReactive);
+        for (int i = 0; i < 6; i++) {
+            nbtTags.setInteger("connection" + i, connectionTypes[i].ordinal());
+        }
         return nbtTags;
     }
 
     @Nonnull
     @Override
-    public final NBTTagCompound getUpdateTag() {
-        return writeToNBT(super.getUpdateTag());
-    }
-
-    @Override
-    public final void handleUpdateTag(NBTTagCompound tag) {
-        readFromNBT(tag);
+    public NBTTagCompound getUpdateTag() {
+        NBTTagCompound nbtTags = super.getUpdateTag();
+        nbtTags.setInteger("tier", getBaseTier().ordinal());
+        return nbtTags;
     }
 
     protected void onRefresh() {
@@ -663,13 +615,13 @@ public abstract class TileEntitySidedPipe extends TileEntity implements INetwork
 
     @Override
     public boolean hasCapability(@Nonnull Capability<?> capability, EnumFacing facing) {
-        return capability == Capabilities.CONFIGURABLE_CAPABILITY || capability == Capabilities.TILE_NETWORK_CAPABILITY
+        return capability == Capabilities.CONFIGURABLE_CAPABILITY || capability == Capabilities.TILE_BYTE_BUF
                || capability == Capabilities.BLOCKABLE_CONNECTION_CAPABILITY || super.hasCapability(capability, facing);
     }
 
     @Override
     public <T> T getCapability(@Nonnull Capability<T> capability, EnumFacing facing) {
-        if (capability == Capabilities.CONFIGURABLE_CAPABILITY || capability == Capabilities.TILE_NETWORK_CAPABILITY
+        if (capability == Capabilities.CONFIGURABLE_CAPABILITY || capability == Capabilities.TILE_BYTE_BUF
             || capability == Capabilities.BLOCKABLE_CONNECTION_CAPABILITY) {
             return (T) this;
         }

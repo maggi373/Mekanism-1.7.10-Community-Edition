@@ -1,18 +1,19 @@
 package mekanism.common.tile.component;
 
 import io.netty.buffer.ByteBuf;
+import mekanism.api.TileNetworkList;
+import mekanism.common.Mekanism;
+import mekanism.common.base.ITileComponent;
+import mekanism.common.base.IUpgradeItem;
+import mekanism.common.misc.Upgrade;
+import mekanism.common.tile.prefab.TileEntityContainerBlock;
+import net.minecraft.nbt.NBTTagCompound;
+
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import mekanism.api.TileNetworkList;
-import mekanism.common.Mekanism;
-import mekanism.common.misc.Upgrade;
-import mekanism.common.base.ITileComponent;
-import mekanism.common.base.IUpgradeItem;
-import mekanism.common.tile.prefab.TileEntityContainerBlock;
-import net.minecraft.nbt.NBTTagCompound;
 
 public class TileComponentUpgrade implements ITileComponent {
 
@@ -151,13 +152,13 @@ public class TileComponentUpgrade implements ITileComponent {
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        data.add(upgrades.size());
+    public void write(ByteBuf buf) {
+        buf.writeInt(upgrades.size());
         for (Entry<Upgrade, Integer> entry : upgrades.entrySet()) {
-            data.add(entry.getKey().ordinal());
-            data.add(entry.getValue());
+            buf.writeInt(entry.getKey().ordinal());
+            buf.writeInt(entry.getValue());
         }
-        data.add(upgradeTicks);
+        buf.writeInt(upgradeTicks);
     }
 
     @Override

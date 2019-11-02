@@ -14,6 +14,7 @@ import mekanism.api.energy.EnergyStack;
 import mekanism.api.energy.IStrictEnergyAcceptor;
 import mekanism.api.energy.IStrictEnergyStorage;
 import mekanism.api.transmitters.TransmissionType;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.EnergyAcceptorWrapper;
 import mekanism.common.block.states.BlockStateTransmitter.TransmitterType;
 import mekanism.common.capabilities.Capabilities;
@@ -306,16 +307,15 @@ public class TileEntityUniversalCable extends TileEntityTransmitter<EnergyAccept
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) throws Exception {
-        tier = CableTier.values()[dataStream.readInt()];
-        super.handlePacketData(dataStream);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        tier = CableTier.values()[buf.readInt()];
+        super.readPacket(buf, type);
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        data.add(tier.ordinal());
-        super.getNetworkedData(data);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        buf.writeInt(tier.ordinal());
+        super.writePacket(buf, type);
     }
 
     @Override

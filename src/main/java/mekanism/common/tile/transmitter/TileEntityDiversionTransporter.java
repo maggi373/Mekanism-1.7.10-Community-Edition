@@ -8,6 +8,7 @@ import mekanism.api.Coord4D;
 import mekanism.api.EnumColor;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.block.states.BlockStateTransmitter.TransmitterType;
 import mekanism.common.content.transporter.TransporterStack;
 import mekanism.common.util.LangUtils;
@@ -49,42 +50,42 @@ public class TileEntityDiversionTransporter extends TileEntityLogisticalTranspor
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) throws Exception {
-        super.handlePacketData(dataStream);
-        if (getWorld().isRemote) {
-            modes[0] = dataStream.readInt();
-            modes[1] = dataStream.readInt();
-            modes[2] = dataStream.readInt();
-            modes[3] = dataStream.readInt();
-            modes[4] = dataStream.readInt();
-            modes[5] = dataStream.readInt();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            modes[0] = buf.readInt();
+            modes[1] = buf.readInt();
+            modes[2] = buf.readInt();
+            modes[3] = buf.readInt();
+            modes[4] = buf.readInt();
+            modes[5] = buf.readInt();
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        data = super.getNetworkedData(data);
-        return addModes(data);
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        super.writePacket(buf, type);
+        buf.writeInt(modes[0]);
+        buf.writeInt(modes[1]);
+        buf.writeInt(modes[2]);
+        buf.writeInt(modes[3]);
+        buf.writeInt(modes[4]);
+        buf.writeInt(modes[5]);
     }
 
     @Override
-    public TileNetworkList makeSyncPacket(int stackId, TransporterStack stack) {
-        return addModes(super.makeSyncPacket(stackId, stack));
+    public NBTTagCompound makeSyncPacketC(int stackId, TransporterStack stack) {
+        return addModes(super.makeSyncPacketC(stackId, stack));
     }
 
     @Override
-    public TileNetworkList makeBatchPacket(Map<Integer, TransporterStack> updates, Set<Integer> deletes) {
-        return addModes(super.makeBatchPacket(updates, deletes));
+    public NBTTagCompound makeBatchPacketC(Map<Integer, TransporterStack> updates, Set<Integer> deletes) {
+        return addModes(super.makeBatchPacketC(updates, deletes));
     }
 
-    private TileNetworkList addModes(TileNetworkList data) {
-        data.add(modes[0]);
-        data.add(modes[1]);
-        data.add(modes[2]);
-        data.add(modes[3]);
-        data.add(modes[4]);
-        data.add(modes[5]);
-        return data;
+    private NBTTagCompound addModes(NBTTagCompound tag) {
+        tag.setIntArray("modes", modes);
+        return tag;
     }
 
     @Override

@@ -4,11 +4,11 @@ import io.netty.buffer.ByteBuf;
 import mekanism.api.Coord4D;
 import mekanism.api.transmitters.IGridTransmitter;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
+import mekanism.common.base.ITileByteBuf;
 import mekanism.common.handler.PacketHandler;
-import mekanism.common.base.ITileNetwork;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.network.PacketDataRequest.DataRequestMessage;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.TileEntityMultiblock;
 import mekanism.common.util.CapabilityUtils;
 import net.minecraft.entity.player.EntityPlayer;
@@ -39,9 +39,8 @@ public class PacketDataRequest implements IMessageHandler<DataRequestMessage, IM
                         transmitter.getTransmitterNetwork().addUpdate(player);
                     }
                 }
-                if (CapabilityUtils.hasCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null)) {
-                    ITileNetwork network = CapabilityUtils.getCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null);
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(tileEntity, network.getNetworkedData()), (EntityPlayerMP) player);
+                if (tileEntity instanceof ITileByteBuf) {
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage((TileEntity & ITileByteBuf) tileEntity, ByteBufType.SERVER_TO_CLIENT), (EntityPlayerMP) player);
                 }
             }
         }, player);

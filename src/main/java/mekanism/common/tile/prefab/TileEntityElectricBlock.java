@@ -7,9 +7,9 @@ import ic2.api.energy.tile.IEnergyConductor;
 import ic2.api.energy.tile.IEnergyEmitter;
 import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
-import mekanism.api.TileNetworkList;
+
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IEnergyWrapper;
-import mekanism.common.base.NBTType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.capabilities.CapabilityWrapperManager;
 import mekanism.common.config.MekanismConfig;
@@ -26,7 +26,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.energy.CapabilityEnergy;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Optional.Method;
 
 public abstract class TileEntityElectricBlock extends TileEntityContainerBlock implements IEnergyWrapper {
@@ -125,19 +124,18 @@ public abstract class TileEntityElectricBlock extends TileEntityContainerBlock i
     }
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isAllSave() || type.isTileUpdate()) {
-            tag.setDouble("electricityStored", getEnergy());
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            setEnergy(buf.readDouble());
         }
-        return tag;
     }
 
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isAllSave() || type.isTileUpdate()) {
-            setEnergy(tag.getDouble("electricityStored"));
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        super.writePacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeDouble(getEnergy());
         }
     }
 
@@ -164,6 +162,20 @@ public abstract class TileEntityElectricBlock extends TileEntityContainerBlock i
         if (wasInvalid && MekanismUtils.useIC2()) {//re-register if we got invalidated
             register();
         }
+    }
+
+    @Override
+    public void readFromNBT(NBTTagCompound nbtTags) {
+        super.readFromNBT(nbtTags);
+        electricityStored = nbtTags.getDouble("electricityStored");
+    }
+
+    @Nonnull
+    @Override
+    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
+        super.writeToNBT(nbtTags);
+        nbtTags.setDouble("electricityStored", getEnergy());
+        return nbtTags;
     }
 
     /**

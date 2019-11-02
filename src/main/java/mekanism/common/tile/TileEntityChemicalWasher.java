@@ -1,47 +1,34 @@
 package mekanism.common.tile;
 
-import java.util.List;
-import javax.annotation.Nonnull;
-
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTank;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
-import mekanism.api.gas.IGasItem;
-import mekanism.common.misc.Upgrade;
-import mekanism.common.misc.Upgrade.IUpgradeInfoHandler;
+import io.netty.buffer.ByteBuf;
+import mekanism.api.TileNetworkList;
+import mekanism.api.gas.*;
 import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.RecipeHandler.Recipe;
 import mekanism.common.recipe.inputs.GasInput;
 import mekanism.common.recipe.machines.WasherRecipe;
 import mekanism.common.tile.prefab.TileEntityMachine;
-import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.FluidContainerUtils;
+import mekanism.common.util.*;
 import mekanism.common.util.FluidContainerUtils.FluidChecker;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.ItemDataUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.PipeUtils;
-import mekanism.common.util.TileUtils;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fluids.FluidRegistry;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidTank;
-import net.minecraftforge.fluids.FluidTankInfo;
-import net.minecraftforge.fluids.FluidUtil;
+import net.minecraftforge.fluids.*;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 
-public class TileEntityChemicalWasher extends TileEntityMachine implements IGasHandler, IFluidHandlerWrapper, ISustainedData, IUpgradeInfoHandler, ITankManager,
+import javax.annotation.Nonnull;
+import java.util.List;
+
+public class TileEntityChemicalWasher extends TileEntityMachine implements IGasHandler, IFluidHandlerWrapper, ISustainedData, Upgrade.IUpgradeInfoHandler, ITankManager,
       IComparatorSupport {
 
     public static final int MAX_GAS = 10000;
@@ -125,26 +112,24 @@ public class TileEntityChemicalWasher extends TileEntityMachine implements IGasH
     }
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            tag.setDouble("1", clientEnergyUsed);
-            TileUtils.addTankData("2", tag, fluidTank);
-            TileUtils.addTankData("3", tag, inputTank);
-            TileUtils.addTankData("4", tag, outputTank);
+    public void handlePacketData(ByteBuf dataStream) {
+        super.handlePacketData(dataStream);
+        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+            clientEnergyUsed = dataStream.readDouble();
+            TileUtils.readTankData(dataStream, fluidTank);
+            TileUtils.readTankData(dataStream, inputTank);
+            TileUtils.readTankData(dataStream, outputTank);
         }
-        return tag;
     }
 
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            clientEnergyUsed = tag.getDouble("1");
-            TileUtils.readTankData("2", tag, fluidTank);
-            TileUtils.readTankData("3", tag, inputTank);
-            TileUtils.readTankData("4", tag, outputTank);
-        }
+    public TileNetworkList getNetworkedData(TileNetworkList data) {
+        super.getNetworkedData(data);
+        data.add(clientEnergyUsed);
+        TileUtils.addTankData(data, fluidTank);
+        TileUtils.addTankData(data, inputTank);
+        TileUtils.addTankData(data, outputTank);
+        return data;
     }
 
     @Override

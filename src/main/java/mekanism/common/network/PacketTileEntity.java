@@ -18,6 +18,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
+@Deprecated
 public class PacketTileEntity implements IMessageHandler<TileEntityMessage, IMessage> {
 
     @Override

@@ -2,8 +2,8 @@ package mekanism.common.tile;
 
 import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
-import mekanism.common.misc.LaserManager;
-import mekanism.common.misc.LaserManager.LaserInfo;
+import mekanism.common.LaserManager;
+import mekanism.common.LaserManager.LaserInfo;
 import mekanism.common.Mekanism;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.tile.prefab.TileEntityEffectsBlock;

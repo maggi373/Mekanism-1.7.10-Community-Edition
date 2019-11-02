@@ -1,12 +1,20 @@
 package mekanism.common.tile;
 
+import io.netty.buffer.ByteBuf;
+import javax.annotation.Nonnull;
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigCardAccess;
+import mekanism.api.TileNetworkList;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.misc.SideData;
-import mekanism.common.base.*;
+import mekanism.common.Mekanism;
+import mekanism.common.SideData;
+import mekanism.common.base.IComparatorSupport;
+import mekanism.common.base.IRedstoneControl;
+import mekanism.common.base.ISideConfiguration;
+import mekanism.common.base.ITierUpgradeable;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.integration.computer.IComputerIntegration;
+import mekanism.common.misc.SideData;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tier.EnergyCubeTier;
@@ -14,14 +22,17 @@ import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.prefab.TileEntityElectricBlock;
-import mekanism.common.util.*;
+import mekanism.common.util.CableUtils;
+import mekanism.common.util.ChargeUtils;
+import mekanism.common.util.InventoryUtils;
+import mekanism.common.util.LangUtils;
+import mekanism.common.util.MekanismUtils;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-
-import javax.annotation.Nonnull;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
 public class TileEntityEnergyCube extends TileEntityElectricBlock implements IComputerIntegration, IRedstoneControl, ISideConfiguration, ISecurityTile, ITierUpgradeable,
       IConfigCardAccess, IComparatorSupport {
@@ -79,7 +90,7 @@ public class TileEntityEnergyCube extends TileEntityElectricBlock implements ICo
             }
             int newScale = getScaledEnergyLevel(20);
             if (newScale != prevScale) {
-                sendPackets();
+                Mekanism.packetHandler.sendUpdatePacket(this);
             }
             prevScale = newScale;
         }
@@ -91,9 +102,8 @@ public class TileEntityEnergyCube extends TileEntityElectricBlock implements ICo
             return false;
         }
         tier = EnergyCubeTier.values()[upgradeTier.ordinal()];
-        //Mekanism.packetHandler.sendUpdatePacket(this);
-        sendPackets();
-        //markDirty();
+        Mekanism.packetHandler.sendUpdatePacket(this);
+        markDirty();
         return true;
     }
 
@@ -176,25 +186,6 @@ public class TileEntityEnergyCube extends TileEntityElectricBlock implements ICo
     }
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isAllSave() || type.isTileUpdate()) {
-            tag.setInteger("tier", tier.ordinal());
-            tag.setInteger("controlType", controlType.ordinal());
-        }
-        return tag;
-    }
-
-    @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isAllSave() || type.isTileUpdate()) {
-            tier = EnergyCubeTier.values()[tag.getInteger("tier")];
-            controlType = RedstoneControl.values()[tag.getInteger("controlType")];
-        }
-    }
-
-    /*@Override
     public void handlePacketData(ByteBuf dataStream) {
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
@@ -229,7 +220,7 @@ public class TileEntityEnergyCube extends TileEntityElectricBlock implements ICo
         nbtTags.setInteger("tier", tier.ordinal());
         nbtTags.setInteger("controlType", controlType.ordinal());
         return nbtTags;
-    }*/
+    }
 
     @Override
     public void setEnergy(double energy) {

@@ -5,6 +5,7 @@ import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IActiveState;
 import mekanism.common.base.IBoundingBlock;
 import mekanism.common.base.IRedstoneControl;
@@ -109,11 +110,11 @@ public class TileEntitySeismicVibrator extends TileEntityElectricBlock implement
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            clientActive = dataStream.readBoolean();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            clientActive = buf.readBoolean();
+            controlType = RedstoneControl.values()[buf.readInt()];
             if (updateDelay == 0 && clientActive != isActive) {
                 updateDelay = MekanismConfig.current().general.UPDATE_DELAY.val();
                 isActive = clientActive;
@@ -123,11 +124,10 @@ public class TileEntitySeismicVibrator extends TileEntityElectricBlock implement
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(isActive);
-        data.add(controlType.ordinal());
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        super.writePacket(buf, type);
+        buf.writeBoolean(isActive);
+        buf.writeInt(controlType.ordinal());
     }
 
     @Override

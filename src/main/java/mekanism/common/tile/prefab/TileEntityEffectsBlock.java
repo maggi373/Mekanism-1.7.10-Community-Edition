@@ -1,12 +1,14 @@
 package mekanism.common.tile.prefab;
 
+import io.netty.buffer.ByteBuf;
+import mekanism.api.TileNetworkList;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
-import mekanism.common.misc.Upgrade;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IActiveState;
 import mekanism.common.base.IUpgradeTile;
-import mekanism.common.base.NBTType;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.tile.TileEntityFactory;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.client.Minecraft;
@@ -14,8 +16,11 @@ import net.minecraft.client.audio.ISound;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import javax.annotation.Nonnull;
 
 public abstract class TileEntityEffectsBlock extends TileEntityElectricBlock implements IActiveState {
 
@@ -130,7 +135,6 @@ public abstract class TileEntityEffectsBlock extends TileEntityElectricBlock imp
         if (world.isRemote) {
             updateSound();
         }
-        //TODO
         if (world.isRemote && !isActive && lastActive > 0) {
             long updateDiff = world.getTotalWorldTime() - lastActive;
             if (updateDiff > RECENT_THRESHOLD) {
@@ -150,7 +154,7 @@ public abstract class TileEntityEffectsBlock extends TileEntityElectricBlock imp
         boolean stateChange = isActive != active;
         if (stateChange) {
             isActive = active;
-            sendPackets();
+            Mekanism.packetHandler.sendUpdatePacket(this);
         }
     }
 
@@ -162,20 +166,45 @@ public abstract class TileEntityEffectsBlock extends TileEntityElectricBlock imp
     }
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isAllSave() || type.isTileUpdate()) {
-            tag.setBoolean("isActive", isActive);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            boolean newActive = buf.readBoolean();
+            boolean stateChange = newActive != isActive;
+            isActive = newActive;
+
+            if (stateChange && !isActive) {
+                // Switched off; note the time
+                lastActive = world.getTotalWorldTime();
+            } else if (stateChange && isActive) {
+                // Switching on; if lastActive is not currently set, trigger a lighting update
+                // and make sure lastActive is clear
+                if (lastActive == -1) {
+                    MekanismUtils.updateBlock(world, getPos());
+                }
+                lastActive = -1;
+            }
         }
-        return tag;
     }
 
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isAllSave() || type.isTileUpdate()) {
-            isActive = tag.getBoolean("isActive");
-        }
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        super.writePacket(buf, type);
+        buf.writeBoolean(isActive);
+    }
+
+    @Override
+    public void readFromNBT(NBTTagCompound nbtTags) {
+        super.readFromNBT(nbtTags);
+        isActive = nbtTags.getBoolean("isActive");
+    }
+
+    @Nonnull
+    @Override
+    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
+        super.writeToNBT(nbtTags);
+        nbtTags.setBoolean("isActive", isActive);
+        return nbtTags;
     }
 
     private boolean isFullyMuffled() {

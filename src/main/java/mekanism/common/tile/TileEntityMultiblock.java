@@ -1,16 +1,11 @@
 package mekanism.common.tile;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import io.netty.buffer.ByteBuf;
 import mekanism.api.Coord4D;
 import mekanism.common.Mekanism;
-import mekanism.common.base.NBTType;
-import mekanism.common.multiblock.IMultiblock;
-import mekanism.common.multiblock.IStructuralMultiblock;
-import mekanism.common.multiblock.MultiblockCache;
-import mekanism.common.multiblock.MultiblockManager;
-import mekanism.common.multiblock.SynchronizedData;
-import mekanism.common.multiblock.UpdateProtocol;
+import mekanism.common.base.ByteBufType;
+import mekanism.common.handler.PacketHandler;
+import mekanism.common.multiblock.*;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.entity.player.EntityPlayer;
@@ -21,8 +16,12 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public abstract class TileEntityMultiblock<T extends SynchronizedData<T>> extends TileEntityContainerBlock implements IMultiblock<T> {
 
@@ -116,7 +115,7 @@ public abstract class TileEntityMultiblock<T extends SynchronizedData<T>> extend
                     }
                 }
 
-                sendPackets();
+                Mekanism.packetHandler.sendUpdatePacket(this);
             }
 
             prevStructure = structure != null;
@@ -147,7 +146,7 @@ public abstract class TileEntityMultiblock<T extends SynchronizedData<T>> extend
             for (Coord4D obj : structure.locations) {
                 TileEntityMultiblock<T> tileEntity = (TileEntityMultiblock<T>) obj.getTileEntity(world);
                 if (tileEntity != null && tileEntity.isRendering) {
-                    sendPackets();
+                    Mekanism.packetHandler.sendUpdatePacket(tileEntity);
                 }
             }
         }
@@ -162,72 +161,78 @@ public abstract class TileEntityMultiblock<T extends SynchronizedData<T>> extend
     public abstract MultiblockManager<T> getManager();
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isAllSave()) {
-            if (cachedID != null) {
-                tag.setString("cachedID", cachedID);
-                cachedData.save(tag);
-            }
-        }
-        if(type.isTileUpdate()) {
-            tag.setBoolean("1", isRendering);
-            tag.setBoolean("2", structure != null);
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        super.writePacket(buf, type);
+        buf.writeBoolean(isRendering);
+        buf.writeBoolean(structure != null);
 
-            if (structure != null && isRendering) {
-                if (sendStructure) {
-                    sendStructure = false;
+        if (structure != null && isRendering) {
+            if (sendStructure) {
+                sendStructure = false;
 
-                    tag.setBoolean("3", true);
+                buf.writeBoolean(true);
 
-                    tag.setInteger("4", structure.volHeight);
-                    tag.setInteger("5", structure.volWidth);
-                    tag.setInteger("6", structure.volLength);
+                buf.writeInt(structure.volHeight);
+                buf.writeInt(structure.volWidth);
+                buf.writeInt(structure.volLength);
 
-                    structure.renderLocation.write(tag);
-                    tag.setBoolean("7", structure.inventoryID != null);
-                    if (structure.inventoryID != null) {
-                        tag.setString("8", structure.inventoryID);
-                    }
-                } else {
-                    tag.setBoolean("3", false);
+                structure.renderLocation.write(buf);
+                buf.writeBoolean(structure.inventoryID != null);//boolean for if has inv id
+                if (structure.inventoryID != null) {
+                    ByteBufUtils.writeUTF8String(buf, structure.inventoryID);
                 }
+            } else {
+                buf.writeBoolean(false);
             }
         }
-        return tag;
     }
 
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isAllSave()) {
-            if (structure == null) {
-                if (tag.hasKey("cachedID")) {
-                    cachedID = tag.getString("cachedID");
-                    cachedData.load(tag);
-                }
-            }
-        }
-        if(type.isTileUpdate()) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
             if (structure == null) {
                 structure = getNewStructure();
             }
-            isRendering = tag.getBoolean("1");
-            clientHasStructure = tag.getBoolean("2");
+
+            isRendering = buf.readBoolean();
+            clientHasStructure = buf.readBoolean();
             if (clientHasStructure && isRendering) {
-                if (tag.getBoolean("3")) {
-                    structure.volHeight = tag.getInteger("4");
-                    structure.volWidth = tag.getInteger("5");
-                    structure.volLength = tag.getInteger("6");
-                    structure.renderLocation = Coord4D.read(tag);
-                    if (tag.getBoolean("7")) {
-                        structure.inventoryID = tag.getString("8");
+                if (buf.readBoolean()) {
+                    structure.volHeight = buf.readInt();
+                    structure.volWidth = buf.readInt();
+                    structure.volLength = buf.readInt();
+                    structure.renderLocation = Coord4D.read(buf);
+                    if (buf.readBoolean()) {
+                        structure.inventoryID = PacketHandler.readString(buf);
                     } else {
                         structure.inventoryID = null;
                     }
                 }
             }
         }
+    }
+
+    @Override
+    public void readFromNBT(NBTTagCompound nbtTags) {
+        super.readFromNBT(nbtTags);
+        if (structure == null) {
+            if (nbtTags.hasKey("cachedID")) {
+                cachedID = nbtTags.getString("cachedID");
+                cachedData.load(nbtTags);
+            }
+        }
+    }
+
+    @Nonnull
+    @Override
+    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
+        super.writeToNBT(nbtTags);
+        if (cachedID != null) {
+            nbtTags.setString("cachedID", cachedID);
+            cachedData.save(nbtTags);
+        }
+        return nbtTags;
     }
 
     @Override

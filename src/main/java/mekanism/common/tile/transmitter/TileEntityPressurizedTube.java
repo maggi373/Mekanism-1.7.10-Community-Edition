@@ -11,6 +11,7 @@ import mekanism.api.gas.GasTank;
 import mekanism.api.gas.GasTankInfo;
 import mekanism.api.gas.IGasHandler;
 import mekanism.api.transmitters.TransmissionType;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.block.states.BlockStateTransmitter.TransmitterType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.tier.BaseTier;
@@ -295,16 +296,15 @@ public class TileEntityPressurizedTube extends TileEntityTransmitter<IGasHandler
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) throws Exception {
-        tier = TubeTier.values()[dataStream.readInt()];
-        super.handlePacketData(dataStream);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        tier = TubeTier.values()[buf.readInt()];
+        super.readPacket(buf, type);
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        data.add(tier.ordinal());
-        super.getNetworkedData(data);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        buf.writeInt(tier.ordinal());
+        super.writePacket(buf, type);
     }
 
     @Override

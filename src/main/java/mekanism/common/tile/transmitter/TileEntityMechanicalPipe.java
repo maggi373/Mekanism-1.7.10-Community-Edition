@@ -6,6 +6,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import mekanism.api.TileNetworkList;
 import mekanism.api.transmitters.TransmissionType;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.FluidHandlerWrapper;
 import mekanism.common.base.IFluidHandlerWrapper;
 import mekanism.common.block.states.BlockStateTransmitter.TransmitterType;
@@ -259,16 +260,15 @@ public class TileEntityMechanicalPipe extends TileEntityTransmitter<IFluidHandle
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) throws Exception {
-        tier = PipeTier.values()[dataStream.readInt()];
-        super.handlePacketData(dataStream);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        tier = PipeTier.values()[buf.readInt()];
+        super.readPacket(buf, type);
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        data.add(tier.ordinal());
-        super.getNetworkedData(data);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        buf.writeInt(tier.ordinal());
+        super.writePacket(buf, type);
     }
 
     @Override

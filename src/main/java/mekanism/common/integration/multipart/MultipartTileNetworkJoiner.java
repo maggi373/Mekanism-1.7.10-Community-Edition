@@ -12,7 +12,9 @@ import mcmultipart.api.slot.EnumFaceSlot;
 import mcmultipart.api.slot.IPartSlot;
 import mcmultipart.api.world.IMultipartBlockAccess;
 import mekanism.api.TileNetworkList;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.INetworkNBT;
+import mekanism.common.base.ITileByteBuf;
 import mekanism.common.base.ITileNetwork;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -27,10 +29,10 @@ import net.minecraft.world.IBlockAccess;
  * <br>
  * In this case, since transmitters do not attach to a side and therefore have no matching EnumFacing the special value 6 is used to represent the center slot.
  */
-public class MultipartTileNetworkJoiner {
+public class MultipartTileNetworkJoiner implements ITileByteBuf {
 
     //TODO nullable-ish enum map
-    private final Int2ObjectMap<INetworkNBT> tileSideMap;
+    private final Int2ObjectMap<ITileByteBuf> tileSideMap;
 
     /**
      * Called by MCMP's multipart container when more than one part implements {@link ITileNetwork}.<br>
@@ -41,9 +43,7 @@ public class MultipartTileNetworkJoiner {
      */
 
 
-
-
-    public MultipartTileNetworkJoiner(List<INetworkNBT> tileList) {
+    public MultipartTileNetworkJoiner(List<ITileByteBuf> tileList) {
         tileSideMap = new Int2ObjectArrayMap<>(7);
         IMultipartContainer container = null;
 
@@ -61,7 +61,7 @@ public class MultipartTileNetworkJoiner {
             for (IPartSlot slot : container.getParts().keySet()) {
                 Optional<IMultipartTile> partTile = container.getPartTile(slot);
                 if (partTile.isPresent()) {
-                    int tileIndex = tileList.indexOf((INetworkNBT) partTile.get().getTileEntity());
+                    int tileIndex = tileList.indexOf((ITileByteBuf) partTile.get().getTileEntity());
                     if (tileIndex >= 0) {
                         byte slotValue = slot instanceof EnumFaceSlot ? (byte) ((EnumFaceSlot) slot).ordinal() : 6;
                         tileSideMap.put(slotValue, tileList.get(tileIndex));
@@ -98,6 +98,25 @@ public class MultipartTileNetworkJoiner {
         }
     }
 
+    public static void addMultipartHeader(TileEntity entity, ByteBuf buf, EnumFacing facing) {
+        int tileNetworkParts = 0;
+        IMultipartContainer container = MultipartMekanism.getContainer(entity.getWorld(), entity.getPos());
+        if (container != null) {
+            for (IPartSlot slot : container.getParts().keySet()) {
+                TileEntity part = container.getPartTile(slot).map(IMultipartTile::getTileEntity).orElse(null);
+                if (part instanceof ITileNetwork) {
+                    tileNetworkParts++;
+                    if (tileNetworkParts > 1) {
+                        break;
+                    }
+                }
+            }
+        }
+        if (tileNetworkParts > 1) {
+            buf.writeByte((byte) (facing == null ? 6 : facing.ordinal()));
+        }
+    }
+
     public static boolean addMultipartHeader(String id, NBTTagCompound tag, TileEntity entity, EnumFacing facing) {
         int tileNetworkParts = 0;
         IMultipartContainer container = MultipartMekanism.getContainer(entity.getWorld(), entity.getPos());
@@ -117,6 +136,26 @@ public class MultipartTileNetworkJoiner {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        for (IntIterator iterator = tileSideMap.keySet().iterator(); iterator.hasNext(); ) {
+            int slotValue = iterator.nextInt();
+            tileSideMap.get(slotValue).writePacket(buf, type);
+        }
+    }
+
+    @Override
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        while (buf.readableBytes() > 0) {
+            byte side = buf.readByte();
+            ITileByteBuf networkTile = tileSideMap.get(side);
+            if (networkTile == null) {
+                break;
+            }
+            networkTile.readPacket(buf, type);
+        }
     }
 
     /*@Override

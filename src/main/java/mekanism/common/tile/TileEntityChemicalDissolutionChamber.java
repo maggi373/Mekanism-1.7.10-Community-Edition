@@ -1,40 +1,31 @@
 package mekanism.common.tile;
 
-import javax.annotation.Nonnull;
-
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTank;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
-import mekanism.api.gas.IGasItem;
-import mekanism.common.registry.MekanismFluids;
-import mekanism.common.misc.Upgrade;
+import io.netty.buffer.ByteBuf;
+import mekanism.api.TileNetworkList;
+import mekanism.api.gas.*;
 import mekanism.common.base.IComparatorSupport;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.base.ITankManager;
-import mekanism.common.base.NBTType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.inputs.ItemStackInput;
 import mekanism.common.recipe.machines.DissolutionRecipe;
+import mekanism.common.registry.MekanismFluids;
 import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.tile.prefab.TileEntityMachine;
-import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.GasUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.ItemDataUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.StatUtils;
-import mekanism.common.util.TileUtils;
+import mekanism.common.util.*;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
+
+import javax.annotation.Nonnull;
 
 public class TileEntityChemicalDissolutionChamber extends TileEntityMachine implements IGasHandler, ISustainedData, ITankManager, IComparatorSupport {
 
@@ -161,24 +152,22 @@ public class TileEntityChemicalDissolutionChamber extends TileEntityMachine impl
     }
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            tag.setInteger("1", operatingTicks);
-            TileUtils.addTankData("2", tag, injectTank);
-            TileUtils.addTankData("3", tag, outputTank);
+    public void handlePacketData(ByteBuf dataStream) {
+        super.handlePacketData(dataStream);
+        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+            operatingTicks = dataStream.readInt();
+            TileUtils.readTankData(dataStream, injectTank);
+            TileUtils.readTankData(dataStream, outputTank);
         }
-        return tag;
     }
 
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            operatingTicks = tag.getInteger("1");
-            TileUtils.readTankData("2", tag, injectTank);
-            TileUtils.readTankData("3", tag, outputTank);
-        }
+    public TileNetworkList getNetworkedData(TileNetworkList data) {
+        super.getNetworkedData(data);
+        data.add(operatingTicks);
+        TileUtils.addTankData(data, injectTank);
+        TileUtils.addTankData(data, outputTank);
+        return data;
     }
 
     @Override

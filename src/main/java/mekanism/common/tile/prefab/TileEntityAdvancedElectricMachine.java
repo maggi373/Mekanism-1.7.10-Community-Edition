@@ -1,43 +1,36 @@
 package mekanism.common.tile.prefab;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import io.netty.buffer.ByteBuf;
 import mekanism.api.EnumColor;
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTank;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
-import mekanism.api.gas.IGasItem;
+import mekanism.api.TileNetworkList;
+import mekanism.api.gas.*;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.registry.MekanismItems;
-import mekanism.common.misc.SideData;
-import mekanism.common.misc.Upgrade;
 import mekanism.common.base.ISustainedData;
-import mekanism.common.base.NBTType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.misc.SideData;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.recipe.GasConversionHandler;
 import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.inputs.AdvancedMachineInput;
 import mekanism.common.recipe.machines.AdvancedMachineRecipe;
 import mekanism.common.recipe.outputs.ItemStackOutput;
+import mekanism.common.registry.MekanismItems;
 import mekanism.common.tile.TileEntityFactory;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
-import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.GasUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.MekanismUtils;
+import mekanism.common.util.*;
 import mekanism.common.util.MekanismUtils.ResourceType;
-import mekanism.common.util.StatUtils;
-import mekanism.common.util.TileUtils;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public abstract class TileEntityAdvancedElectricMachine<RECIPE extends AdvancedMachineRecipe<RECIPE>> extends
       TileEntityUpgradeableMachine<AdvancedMachineInput, ItemStackOutput, RECIPE> implements IGasHandler, ISustainedData {
@@ -226,37 +219,20 @@ public abstract class TileEntityAdvancedElectricMachine<RECIPE extends AdvancedM
         return recipe != null && recipe.canOperate(inventory, 0, 2, gasTank, secondaryEnergyThisTick);
     }
 
-    /*@Override
+    @Override
     public void handlePacketData(ByteBuf dataStream) {
         super.handlePacketData(dataStream);
         if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
             TileUtils.readTankData(dataStream, gasTank);
         }
-    }*/
-
-    @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.writeNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            TileUtils.addTankData("1", tag, gasTank);
-        }
-        return tag;
     }
 
     @Override
-    public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
-        super.readNetworkNBT(tag, type);
-        if(type.isTileUpdate()) {
-            TileUtils.readTankData("1", tag, gasTank);
-        }
-    }
-
-    /*@Override
     public TileNetworkList getNetworkedData(TileNetworkList data) {
         super.getNetworkedData(data);
         TileUtils.addTankData(data, gasTank);
         return data;
-    }*/
+    }
 
     @Override
     public void readFromNBT(NBTTagCompound nbtTags) {

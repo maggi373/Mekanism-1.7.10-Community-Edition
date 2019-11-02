@@ -1,18 +1,19 @@
 package mekanism.common.tile;
 
-import java.util.Map;
 import mekanism.api.EnumColor;
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasStack;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.misc.SideData;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
+import mekanism.common.misc.SideData;
 import mekanism.common.recipe.RecipeHandler.Recipe;
 import mekanism.common.recipe.inputs.AdvancedMachineInput;
 import mekanism.common.recipe.machines.InjectionRecipe;
 import mekanism.common.tile.prefab.TileEntityAdvancedElectricMachine;
 import mekanism.common.util.InventoryUtils;
 import net.minecraft.util.EnumFacing;
+
+import java.util.Map;
 
 public class TileEntityChemicalInjectionChamber extends TileEntityAdvancedElectricMachine<InjectionRecipe> {
 

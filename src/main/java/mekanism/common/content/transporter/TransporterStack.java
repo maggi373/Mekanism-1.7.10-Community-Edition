@@ -18,6 +18,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class TransporterStack {
@@ -50,6 +51,13 @@ public class TransporterStack {
         return stack;
     }
 
+    public static TransporterStack readFromPacket(NBTTagCompound tag) {
+        TransporterStack stack = new TransporterStack();
+        stack.readPacketNBT(tag);
+        return stack;
+    }
+
+    @Deprecated
     public void write(ILogisticalTransporter transporter, TileNetworkList data) {
         if (color != null) {
             data.add(TransporterUtils.colors.indexOf(color));
@@ -70,6 +78,75 @@ public class TransporterStack {
 
         getPrev(transporter).write(data);
         data.add(itemStack);
+    }
+
+    public void write(ILogisticalTransporter transporter, ByteBuf buf) {
+        if (color != null) {
+            buf.writeInt(TransporterUtils.colors.indexOf(color));
+        } else {
+            buf.writeInt(-1);
+        }
+
+        buf.writeInt(progress);
+        originalLocation.write(buf);
+        buf.writeInt(pathType.ordinal());
+
+        if (pathToTarget.indexOf(transporter.coord()) > 0) {
+            buf.writeBoolean(true);
+            getNext(transporter).write(buf);
+        } else {
+            buf.writeBoolean(false);
+        }
+
+        getPrev(transporter).write(buf);
+        ByteBufUtils.writeItemStack(buf, itemStack);
+    }
+
+    public void writePacketNBT(ILogisticalTransporter transporter, NBTTagCompound tag) {
+        if (color != null) {
+            tag.setInteger("1", TransporterUtils.colors.indexOf(color));
+        } else {
+            tag.setInteger("1", -1);
+        }
+
+        tag.setInteger("2", progress);
+
+        NBTTagCompound tag1 = new NBTTagCompound();
+        originalLocation.write(tag1);
+        tag.setTag("3", tag1);
+
+        tag.setInteger("4", pathType.ordinal());
+
+        if (pathToTarget.indexOf(transporter.coord()) > 0) {
+            tag.setBoolean("5", true);
+            getNext(transporter).write(tag1);
+            tag.setTag("6", tag1);
+        } else {
+            tag.setBoolean("5", false);
+        }
+
+        getPrev(transporter).write(tag1);
+        tag.setTag("7", tag1);
+        itemStack.writeToNBT(tag);
+    }
+
+    public void readPacketNBT(NBTTagCompound tag) {
+        int c = tag.getInteger("1");
+        if (c != -1) {
+            color = TransporterUtils.colors.get(c);
+        } else {
+            color = null;
+        }
+
+        progress = tag.getInteger("2");
+        originalLocation = Coord4D.read(tag.getCompoundTag("3"));
+        pathType = Path.values()[tag.getInteger("4")];
+
+        if (tag.getBoolean("5")) {
+            clientNext = Coord4D.read(tag.getCompoundTag("6"));
+        }
+        clientPrev = Coord4D.read(tag.getCompoundTag("7"));
+        itemStack = new ItemStack(tag);
     }
 
     public void read(ByteBuf dataStream) {

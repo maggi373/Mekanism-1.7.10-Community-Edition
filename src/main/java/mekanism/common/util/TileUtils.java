@@ -12,6 +12,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTank;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 //TODO: Move this and factor out the parts into proper classes. This is mainly just temp to make organization not as needed
 public class TileUtils {
@@ -27,6 +28,14 @@ public class TileUtils {
             data.add(tank.getGas().write(new NBTTagCompound()));
         } else {
             data.add(EMPTY_TAG_COMPOUND);
+        }
+    }
+
+    public static void addTankData(ByteBuf buf, GasTank tank) {
+        if (tank.getGas() != null) {
+            ByteBufUtils.writeTag(buf, tank.getGas().write(new NBTTagCompound()));
+        } else {
+            ByteBufUtils.writeTag(buf, EMPTY_TAG_COMPOUND);
         }
     }
 
@@ -51,7 +60,18 @@ public class TileUtils {
         }
     }
 
-    @Deprecated
+    public static void addTankData(ByteBuf buf, FluidTank tank) {
+        addFluidStack(buf, tank.getFluid());
+    }
+
+    public static void addFluidStack(ByteBuf buf, FluidStack stack) {
+        if (stack != null) {
+            ByteBufUtils.writeTag(buf, stack.writeToNBT(new NBTTagCompound()));
+        } else {
+            ByteBufUtils.writeTag(buf, EMPTY_TAG_COMPOUND);
+        }
+    }
+
     public static void readTankData(ByteBuf dataStream, GasTank tank) {
         tank.setGas(GasStack.readFromNBT(PacketHandler.readNBT(dataStream)));
     }

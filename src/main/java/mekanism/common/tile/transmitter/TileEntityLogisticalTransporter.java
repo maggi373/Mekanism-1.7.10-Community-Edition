@@ -8,10 +8,11 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.EnumColor;
-import mekanism.api.TileNetworkList;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.ILogisticalTransporter;
+import mekanism.common.base.INetworkNBT;
 import mekanism.common.base.NBTType;
 import mekanism.common.block.property.PropertyColor;
 import mekanism.common.block.states.BlockStateTransmitter.TransmitterType;
@@ -20,7 +21,6 @@ import mekanism.common.content.transporter.PathfinderCache;
 import mekanism.common.content.transporter.TransitRequest;
 import mekanism.common.content.transporter.TransitRequest.TransitResponse;
 import mekanism.common.content.transporter.TransporterStack;
-import mekanism.common.integration.multipart.MultipartTileNetworkJoiner;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tier.TransporterTier;
 import mekanism.common.transmitters.TransporterImpl;
@@ -39,9 +39,9 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.property.IExtendedBlockState;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.common.util.Constants;
 
-public class TileEntityLogisticalTransporter extends TileEntityTransmitter<TileEntity, InventoryNetwork, Void> {
+public class TileEntityLogisticalTransporter extends TileEntityTransmitter<TileEntity, InventoryNetwork, Void> implements INetworkNBT {
 
     private final int SYNC_PACKET = 1;
     private final int BATCH_PACKET = 2;
@@ -166,101 +166,89 @@ public class TileEntityLogisticalTransporter extends TileEntityTransmitter<TileE
     }
 
     @Override
-    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
-        switch (type) {
-            case ALL_SAVE:
-                super.writeNetworkNBT(tag, type);
-                tag.setInteger("tier", tier.ordinal());
-                getTransmitter().writeSaveNBT(tag);
-                break;
-            case TILE_UPDATE:
-                tag.setInteger("11", 0);
-                super.writeNetworkNBT(tag, type);
-                tag.setInteger("12", tier.ordinal());
-                if (getTransmitter().getColor() != null) {
-                    tag.setInteger("13", (TransporterUtils.colors.indexOf(getTransmitter().getColor())));
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            int type2 = buf.readInt();
+            if (type2 == 0) {
+                super.readPacket(buf, type);
+                tier = TransporterTier.values()[buf.readInt()];
+                int c = buf.readInt();
+                EnumColor prev = getTransmitter().getColor();
+                if (c != -1) {
+                    getTransmitter().setColor(TransporterUtils.colors.get(c));
                 } else {
-                    tag.setInteger("13", -1);
+                    getTransmitter().setColor(null);
                 }
-                getTransmitter().writeUpdateNBT(tag);
-                break;
+                if (prev != getTransmitter().getColor()) {
+                    MekanismUtils.updateBlock(world, pos);
+                }
+                getTransmitter().readFromPacket(buf);
+            }
         }
-        return tag;
+    }
+
+    @Override
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        buf.writeInt(0);
+        super.writePacket(buf, type);
+        buf.writeInt(tier.ordinal());
+        if (getTransmitter().getColor() != null) {
+            buf.writeInt(TransporterUtils.colors.indexOf(getTransmitter().getColor()));
+        } else {
+            buf.writeInt(-1);
+        }
+
+        // Serialize all the in-flight stacks (this includes their ID)
+        getTransmitter().writeToPacket(buf);
     }
 
     @Override
     public void readNetworkNBT(NBTTagCompound tag, NBTType type) {
         switch (type) {
-            case ALL_SAVE:
-                super.readNetworkNBT(tag, type);
-                if (tag.hasKey("tier")) {
-                    tier = TransporterTier.values()[tag.getInteger("tier")];
-                }
-                getTransmitter().readSaveNBT(tag);
+            case SYNC_PACKET:
+                readStack(tag);
                 break;
-            case TILE_UPDATE:
-                int type2 = tag.getInteger("11");
-                if (type2 == 0) {
-                    super.readNetworkNBT(tag, type);
-                    tier = TransporterTier.values()[tag.getInteger("12")];
-                    int c = tag.getInteger("13");
-                    EnumColor prev = getTransmitter().getColor();
-                    if (c != -1) {
-                        getTransmitter().setColor(TransporterUtils.colors.get(c));
-                    } else {
-                        getTransmitter().setColor(null);
-                    }
-                    if (prev != getTransmitter().getColor()) {
-                        MekanismUtils.updateBlock(world, pos);
-                    }
-                    getTransmitter().readUpdateNBT(tag);
-                } else if (type2 == SYNC_PACKET) {
-                    readStack(dataStream);
-                } else if (type2 == BATCH_PACKET) {
-                    int updates = dataStream.readInt();
-                    for (int i = 0; i < updates; i++) {
-                        readStack(dataStream);
-                    }
-                    int deletes = dataStream.readInt();
-                    for (int i = 0; i < deletes; i++) {
-                        getTransmitter().deleteStack(dataStream.readInt());
-                    }
+            case BATCH_PACKET:
+                NBTTagList list = tag.getTagList("l", Constants.NBT.TAG_COMPOUND);
+                for (int i = 0; i < list.tagCount(); i++) {
+                    readStack(list.getCompoundTagAt(i));
+                }
+                int deletes = tag.getInteger("2");
+                for (int i = 0; i < deletes; i++) {
+                    getTransmitter().deleteStack(tag.getInteger("d" + i));
                 }
                 break;
         }
     }
 
-    public TileNetworkList makeSyncPacket(int stackId, TransporterStack stack) {
-        TileNetworkList data = new TileNetworkList();
-        if (Mekanism.hooks.MCMPLoaded) {
-            MultipartTileNetworkJoiner.addMultipartHeader(this, data, null);
-        }
-        data.add(SYNC_PACKET);
-        data.add(stackId);
-        stack.write(getTransmitter(), data);
-        return data;
+    public NBTTagCompound makeSyncPacketC(int stackId, TransporterStack stack) {
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setInteger("0", stackId);
+        stack.writePacketNBT(getTransmitter(), tag);
+        return tag;
     }
 
-    public TileNetworkList makeBatchPacket(Map<Integer, TransporterStack> updates, Set<Integer> deletes) {
-        TileNetworkList data = new TileNetworkList();
-        if (Mekanism.hooks.MCMPLoaded) {
-            MultipartTileNetworkJoiner.addMultipartHeader(this, data, null);
-        }
-        data.add(BATCH_PACKET);
-        data.add(updates.size());
+    public NBTTagCompound makeBatchPacketC(Map<Integer, TransporterStack> updates, Set<Integer> deletes) {
+        NBTTagCompound tag = new NBTTagCompound();
+        NBTTagList list = new NBTTagList();
         for (Entry<Integer, TransporterStack> entry : updates.entrySet()) {
-            data.add(entry.getKey());
-            entry.getValue().write(getTransmitter(), data);
+            NBTTagCompound tag1 = new NBTTagCompound();
+            tag1.setInteger("0", entry.getKey());
+            entry.getValue().writePacketNBT(getTransmitter(), tag1);
+            list.appendTag(tag1);
         }
-        data.add(deletes.size());
-        data.addAll(deletes);
-        return data;
+        tag.setTag("l", list);
+        tag.setInteger("2", deletes.size());
+        int c = 0;
+        for(Integer i : deletes) {
+            tag.setInteger("d"+c++, i);
+        }
+        return tag;
     }
 
-
-    private void readStack(ByteBuf dataStream) {
-        int id = dataStream.readInt();
-        TransporterStack stack = TransporterStack.readFromPacket(dataStream);
+    private void readStack(NBTTagCompound tag) {
+        int id = tag.getInteger("0");
+        TransporterStack stack = TransporterStack.readFromPacket(tag);
         if (stack.progress == 0) {
             stack.progress = 5;
         }
@@ -268,11 +256,40 @@ public class TileEntityLogisticalTransporter extends TileEntityTransmitter<TileE
     }
 
     @Override
+    public void readFromNBT(NBTTagCompound nbtTags) {
+        super.readFromNBT(nbtTags);
+        if (nbtTags.hasKey("tier")) {
+            tier = TransporterTier.values()[nbtTags.getInteger("tier")];
+        }
+        getTransmitter().readFromNBT(nbtTags);
+    }
+
+    @Nonnull
+    @Override
+    public NBTTagCompound writeToNBT(NBTTagCompound nbtTags) {
+        super.writeToNBT(nbtTags);
+        nbtTags.setInteger("tier", tier.ordinal());
+        if (getTransmitter().getColor() != null) {
+            nbtTags.setInteger("color", TransporterUtils.colors.indexOf(getTransmitter().getColor()));
+        }
+        NBTTagList stacks = new NBTTagList();
+        for (TransporterStack stack : getTransmitter().getTransit()) {
+            NBTTagCompound tagCompound = new NBTTagCompound();
+            stack.write(tagCompound);
+            stacks.appendTag(tagCompound);
+        }
+        if (stacks.tagCount() != 0) {
+            nbtTags.setTag("stacks", stacks);
+        }
+        return nbtTags;
+    }
+
+    @Override
     protected EnumActionResult onConfigure(EntityPlayer player, int part, EnumFacing side) {
         TransporterUtils.incrementColor(getTransmitter());
         onPartChanged(null);
         PathfinderCache.onChanged(new Coord4D(getPos(), getWorld()));
-        sendPackets();
+        Mekanism.packetHandler.sendUpdatePacket(this);
         TextComponentGroup msg = new TextComponentGroup(TextFormatting.GRAY).string(Mekanism.LOG_TAG + " ", TextFormatting.DARK_BLUE)
               .translation("tooltip.configurator.toggleColor").string(": ");
 
@@ -369,5 +386,10 @@ public class TileEntityLogisticalTransporter extends TileEntityTransmitter<TileE
             return Capabilities.LOGISTICAL_TRANSPORTER_CAPABILITY.cast(getTransmitter());
         }
         return super.getCapability(capability, side);
+    }
+
+    @Override
+    public NBTTagCompound writeNetworkNBT(NBTTagCompound tag, NBTType type) {
+        return tag;
     }
 }

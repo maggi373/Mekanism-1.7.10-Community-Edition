@@ -8,6 +8,7 @@ import mekanism.api.Coord4D;
 import mekanism.api.IEvaporationSolar;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IActiveState;
 import mekanism.common.base.ITankManager;
 import mekanism.common.capabilities.Capabilities;
@@ -422,22 +423,22 @@ public class TileEntityThermalEvaporationController extends TileEntityThermalEva
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            TileUtils.readTankData(dataStream, inputTank);
-            TileUtils.readTankData(dataStream, outputTank);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            TileUtils.readTankData(buf, inputTank);
+            TileUtils.readTankData(buf, outputTank);
 
-            structured = dataStream.readBoolean();
-            controllerConflict = dataStream.readBoolean();
-            clientSolarAmount = dataStream.readInt();
-            height = dataStream.readInt();
-            temperature = dataStream.readFloat();
-            biomeTemp = dataStream.readFloat();
-            isLeftOnFace = dataStream.readBoolean();
-            lastGain = dataStream.readFloat();
-            totalLoss = dataStream.readFloat();
-            renderY = dataStream.readInt();
+            structured = buf.readBoolean();
+            controllerConflict = buf.readBoolean();
+            clientSolarAmount = buf.readInt();
+            height = buf.readInt();
+            temperature = buf.readFloat();
+            biomeTemp = buf.readFloat();
+            isLeftOnFace = buf.readBoolean();
+            lastGain = buf.readFloat();
+            totalLoss = buf.readFloat();
+            renderY = buf.readInt();
 
             if (structured != clientStructured) {
                 inputTank.setCapacity(getMaxFluid());
@@ -456,21 +457,20 @@ public class TileEntityThermalEvaporationController extends TileEntityThermalEva
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        TileUtils.addTankData(data, inputTank);
-        TileUtils.addTankData(data, outputTank);
-        data.add(structured);
-        data.add(controllerConflict);
-        data.add(getActiveSolars());
-        data.add(height);
-        data.add(temperature);
-        data.add(biomeTemp);
-        data.add(isLeftOnFace);
-        data.add(lastGain);
-        data.add(totalLoss);
-        data.add(renderY);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        super.writePacket(buf, type);
+        TileUtils.addTankData(buf, inputTank);
+        TileUtils.addTankData(buf, outputTank);
+        buf.writeBoolean(structured);
+        buf.writeBoolean(controllerConflict);
+        buf.writeInt(getActiveSolars());
+        buf.writeInt(height);
+        buf.writeFloat(temperature);
+        buf.writeFloat(biomeTemp);
+        buf.writeBoolean(isLeftOnFace);
+        buf.writeFloat(lastGain);
+        buf.writeFloat(totalLoss);
+        buf.writeInt(renderY);
     }
 
     @Override

@@ -144,7 +144,7 @@ public class MultipartMekanism implements IMCMPAddon {
         //registry.registerStackWrapper(Item.getItemFromBlock(MekanismBlocks.Transmitter), s -> true, MekanismBlocks.Transmitter);
         registry.registerPartWrapper(MekanismBlocks.GlowPanel, GLOWPANEL_MP = new MultipartGlowPanel());
         //registry.registerStackWrapper(Item.getItemFromBlock(MekanismBlocks.GlowPanel), s -> true, MekanismBlocks.GlowPanel);
-        MultipartCapabilityHelper.registerCapabilityJoiner(Capabilities.TILE_NETWORK_CAPABILITY, MultipartTileNetworkJoiner::new);
+        MultipartCapabilityHelper.registerCapabilityJoiner(Capabilities.TILE_BYTE_BUF, MultipartTileNetworkJoiner::new);
     }
 
     private void register(AttachCapabilitiesEvent<TileEntity> e, String id) {

@@ -1,20 +1,21 @@
 package mekanism.common.tile.component;
 
 import io.netty.buffer.ByteBuf;
-import java.util.UUID;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
-import mekanism.common.handler.PacketHandler;
 import mekanism.common.base.ITileComponent;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.frequency.Frequency;
 import mekanism.common.frequency.FrequencyManager;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.security.ISecurityTile.SecurityMode;
 import mekanism.common.security.SecurityFrequency;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
+
+import java.util.UUID;
 
 public class TileComponentSecurity implements ITileComponent {
 
@@ -162,22 +163,22 @@ public class TileComponentSecurity implements ITileComponent {
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        data.add(securityMode.ordinal());
+    public void write(ByteBuf buf) {
+        buf.writeInt(securityMode.ordinal());
 
         if (ownerUUID != null) {
-            data.add(true);
-            data.add(ownerUUID.toString());
-            data.add(MekanismUtils.getLastKnownUsername(ownerUUID));
+            buf.writeBoolean(true);
+            ByteBufUtils.writeUTF8String(buf, ownerUUID.toString());
+            ByteBufUtils.writeUTF8String(buf, MekanismUtils.getLastKnownUsername(ownerUUID));
         } else {
-            data.add(false);
+            buf.writeBoolean(false);
         }
 
         if (frequency != null) {
-            data.add(true);
-            frequency.write(data);
+            buf.writeBoolean(true);
+            frequency.write(buf);
         } else {
-            data.add(false);
+            buf.writeBoolean(false);
         }
     }
 

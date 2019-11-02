@@ -9,6 +9,7 @@ import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
 import mekanism.api.gas.GasTankInfo;
 import mekanism.api.gas.IGasHandler;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.recipe.inputs.IntegerInput;
@@ -73,18 +74,15 @@ public class TileEntityAmbientAccumulator extends TileEntityContainerBlock imple
         return new GasTankInfo[]{collectedGas};
     }
 
-    /*@Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        TileUtils.addTankData(data, collectedGas);
-        return data;
+    @Override
+    public void writePacket(ByteBuf buf, ByteBufType type) {
+        TileUtils.addTankData(buf, collectedGas);
     }
 
     @Override
-    public void handlePacketData(ByteBuf data) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            TileUtils.readTankData(data, collectedGas);
-        }
-    }*/
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        TileUtils.readTankData(buf, collectedGas);
+    }
 
     @Nonnull
     @Override
