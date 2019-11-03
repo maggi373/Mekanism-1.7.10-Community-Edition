@@ -5,6 +5,7 @@ import mekanism.api.EnumColor;
 import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
 import mekanism.api.transmitters.TransmissionType;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
@@ -220,18 +221,19 @@ public abstract class TileEntityAdvancedElectricMachine<RECIPE extends AdvancedM
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            TileUtils.readTankData(dataStream, gasTank);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            TileUtils.readTankData(buf, gasTank);
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        TileUtils.addTankData(data, gasTank);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            TileUtils.addTankData(buf, gasTank);
+        }
     }
 
     @Override

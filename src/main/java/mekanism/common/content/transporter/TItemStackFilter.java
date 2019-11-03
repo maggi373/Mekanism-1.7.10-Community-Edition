@@ -60,18 +60,16 @@ public class TItemStackFilter extends TransporterFilter implements IItemStackFil
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        data.add(0);
+    public void write(ByteBuf buf) {
+        buf.writeInt(0);
+        super.write(buf);
+        buf.writeBoolean(sizeMode);
+        buf.writeInt(min);
+        buf.writeInt(max);
 
-        super.write(data);
-
-        data.add(sizeMode);
-        data.add(min);
-        data.add(max);
-
-        data.add(MekanismUtils.getID(itemType));
-        data.add(itemType.getCount());
-        data.add(itemType.getItemDamage());
+        buf.writeInt(MekanismUtils.getID(itemType));
+        buf.writeInt(itemType.getCount());
+        buf.writeInt(itemType.getItemDamage());
     }
 
     @Override

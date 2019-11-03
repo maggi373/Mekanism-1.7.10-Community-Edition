@@ -58,11 +58,9 @@ public class TileEntityBoundingBlock extends TileEntity implements ITileByteBuf 
         return null;
     }
 
-    public void onNeighborChange(Block block) {
+    public void onNeighborChange() {
         final TileEntity tile = getMainTile();
         if (tile instanceof TileEntityBasicBlock) {
-
-            final TileEntityBasicBlock tileEntity = (TileEntityBasicBlock) tile;
             int power = world.getRedstonePowerFromNeighbors(getPos());
             if (prevPower != power) {
                 if (power > 0) {

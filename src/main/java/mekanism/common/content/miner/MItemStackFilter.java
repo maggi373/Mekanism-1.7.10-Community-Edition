@@ -49,13 +49,13 @@ public class MItemStackFilter extends MinerFilter implements IItemStackFilter {
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        data.add(0);
-        super.write(data);
-        data.add(fuzzy);
-        data.add(MekanismUtils.getID(itemType));
-        data.add(itemType.getCount());
-        data.add(itemType.getItemDamage());
+    public void write(ByteBuf buf) {
+        buf.writeInt(0);
+        super.write(buf);
+        buf.writeBoolean(fuzzy);
+        buf.writeInt(MekanismUtils.getID(itemType));
+        buf.writeInt(itemType.getCount());
+        buf.writeInt(itemType.getItemDamage());
     }
 
     @Override

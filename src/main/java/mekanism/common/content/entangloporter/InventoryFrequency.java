@@ -94,12 +94,12 @@ public class InventoryFrequency extends Frequency {
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        super.write(data);
-        data.add(storedEnergy);
-        TileUtils.addTankData(data, storedFluid);
-        TileUtils.addTankData(data, storedGas);
-        data.add(temperature);
+    public void write(ByteBuf buf) {
+        super.write(buf);
+        buf.writeDouble(storedEnergy);
+        TileUtils.addTankData(buf, storedFluid);
+        TileUtils.addTankData(buf, storedGas);
+        buf.writeDouble(temperature);
     }
 
     @Override

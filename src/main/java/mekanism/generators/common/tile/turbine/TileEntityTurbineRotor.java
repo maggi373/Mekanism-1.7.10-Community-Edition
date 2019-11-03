@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.multiblock.TileEntityInternalMultiblock;
 import net.minecraft.block.Block;
 import net.minecraft.nbt.NBTTagCompound;
@@ -130,13 +131,13 @@ public class TileEntityTurbineRotor extends TileEntityInternalMultiblock {
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
             int prevBlades = blades;
             int prevPosition = position;
-            blades = dataStream.readInt();
-            position = dataStream.readInt();
+            blades = buf.readInt();
+            position = buf.readInt();
 
             if (prevBlades != blades || prevPosition != prevBlades) {
                 rotationLower = 0;
@@ -146,11 +147,12 @@ public class TileEntityTurbineRotor extends TileEntityInternalMultiblock {
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(blades);
-        data.add(position);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(blades);
+            buf.writeInt(position);
+        }
     }
 
     @Override

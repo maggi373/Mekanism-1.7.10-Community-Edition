@@ -8,6 +8,7 @@ import mekanism.common.content.transporter.Finder.ModIDFinder;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 public class MModIDFilter extends MinerFilter implements IModIDFilter {
 
@@ -36,10 +37,10 @@ public class MModIDFilter extends MinerFilter implements IModIDFilter {
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        data.add(3);
-        super.write(data);
-        data.add(modID);
+    public void write(ByteBuf buf) {
+        buf.writeInt(3);
+        super.write(buf);
+        ByteBufUtils.writeUTF8String(buf, modID);
     }
 
     @Override

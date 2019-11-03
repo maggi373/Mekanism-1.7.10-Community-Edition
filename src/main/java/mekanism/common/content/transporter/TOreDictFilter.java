@@ -7,6 +7,7 @@ import mekanism.common.content.filter.IOreDictFilter;
 import mekanism.common.content.transporter.Finder.OreDictFinder;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 public class TOreDictFilter extends TransporterFilter implements IOreDictFilter {
 
@@ -36,10 +37,10 @@ public class TOreDictFilter extends TransporterFilter implements IOreDictFilter 
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        data.add(1);
-        super.write(data);
-        data.add(oreDictName);
+    public void write(ByteBuf buf) {
+        buf.writeInt(1);
+        super.write(buf);
+        ByteBufUtils.writeUTF8String(buf, oreDictName);
     }
 
     @Override

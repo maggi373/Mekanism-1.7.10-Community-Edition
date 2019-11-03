@@ -645,16 +645,18 @@ public final class MekanismUtils {
 
     /**
      * Marks the chunk this TileEntity is in as modified. Call this method to be sure NBT is written by the defined tile entity.
-     *
+     * No need
      * @param tileEntity - TileEntity to save
      */
+    @Deprecated
     public static void saveChunk(TileEntity tileEntity) {
-        if (tileEntity == null || tileEntity.isInvalid()) {
+        /*if (tileEntity == null || tileEntity.isInvalid()) {
             return;
         } else {
-            tileEntity.getWorld();
+            tileEntity.markDirty();
         }
-        tileEntity.getWorld().markChunkDirty(tileEntity.getPos(), tileEntity);
+        tileEntity.getWorld();
+        tileEntity.getWorld().markChunkDirty(tileEntity.getPos(), tileEntity);*/
     }
 
     /**

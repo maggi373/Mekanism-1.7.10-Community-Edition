@@ -23,8 +23,8 @@ public class PacketByteBuf implements IMessageHandler<PacketByteBuf.ByteBufMessa
             TileEntity tileEntity = message.coord4D.getTileEntity(player.world);
             if(tileEntity instanceof ITileByteBuf) {
                 ((ITileByteBuf) tileEntity).readPacket(message.buf, message.type);
-                message.buf.release();
             }
+            message.buf.release();
         }, player);
         return null;
     }

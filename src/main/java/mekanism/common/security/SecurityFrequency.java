@@ -11,6 +11,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraftforge.common.util.Constants.NBT;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 public class SecurityFrequency extends Frequency {
 
@@ -70,15 +71,15 @@ public class SecurityFrequency extends Frequency {
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        super.write(data);
+    public void write(ByteBuf buf) {
+        super.write(buf);
 
-        data.add(override);
-        data.add(securityMode.ordinal());
+        buf.writeBoolean(override);
+        buf.writeInt(securityMode.ordinal());
 
-        data.add(trusted.size());
-        for (String s : trusted) {
-            data.add(s);
+        buf.writeInt(trusted.size());
+        for(String s : trusted) {
+            ByteBufUtils.writeUTF8String(buf, s);
         }
     }
 

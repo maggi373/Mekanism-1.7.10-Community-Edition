@@ -187,7 +187,7 @@ public class FrequencyManager {
         }
     }
 
-    public void writeFrequencies(TileNetworkList data) {
+    /*public void writeFrequencies(TileNetworkList data) {
         data.add(frequencies.size());
         for (Frequency freq : frequencies) {
             freq.write(data);
@@ -207,7 +207,7 @@ public class FrequencyManager {
             throw new RuntimeException(e);
         }
         return ret;
-    }
+    }*/
 
     public String getName() {
         return ownerUUID != null ? (ownerUUID.toString() + "_" + name + "FrequencyHandler") : (name + "FrequencyHandler");

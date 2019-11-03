@@ -128,7 +128,7 @@ public abstract class TileEntityBasicBlock extends TileEntity implements ITileBy
     @Override
     public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         if (type == ByteBufType.SERVER_TO_CLIENT) {
-            buf.writeInt(facing == null ? -1 : facing.ordinal());
+            buf.writeInt(facing.ordinal());
             buf.writeBoolean(redstone);
             for (ITileComponent component : components) {
                 component.write(buf);

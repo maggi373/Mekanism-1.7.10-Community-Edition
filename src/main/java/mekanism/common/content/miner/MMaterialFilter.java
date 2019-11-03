@@ -44,12 +44,12 @@ public class MMaterialFilter extends MinerFilter implements IMaterialFilter {
     }
 
     @Override
-    public void write(TileNetworkList data) {
-        data.add(2);
-        super.write(data);
-        data.add(MekanismUtils.getID(materialItem));
-        data.add(materialItem.getCount());
-        data.add(materialItem.getItemDamage());
+    public void write(ByteBuf buf) {
+        buf.writeInt(2);
+        super.write(buf);
+        buf.writeInt(MekanismUtils.getID(materialItem));
+        buf.writeInt(materialItem.getCount());
+        buf.writeInt(materialItem.getItemDamage());
     }
 
     @Override
