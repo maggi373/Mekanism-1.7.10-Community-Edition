@@ -20,11 +20,13 @@ import mekanism.client.gui.element.tab.GuiSecurityTab;
 import mekanism.client.gui.element.tab.GuiUpgradeTab;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.frequency.Frequency;
 import mekanism.common.frequency.FrequencyManager;
 import mekanism.common.inventory.container.ContainerNull;
 import mekanism.common.inventory.container.ContainerTeleporter;
 import mekanism.common.item.ItemPortableTeleporter;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketPortableTeleporter.PortableTeleporterMessage;
 import mekanism.common.network.PacketPortableTeleporter.PortableTeleporterPacketType;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
@@ -255,8 +257,7 @@ public class GuiTeleporter extends GuiMekanismTile<TileEntityTeleporter> {
             if (selection != -1) {
                 Frequency freq = privateMode ? getPrivateCache().get(selection) : getPublicCache().get(selection);
                 if (tileEntity != null) {
-                    TileNetworkList data = TileNetworkList.withContents(1, freq.name, freq.publicFreq);
-                    Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+                    Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 1, freq.name, freq.publicFreq));
                 } else {
                     Mekanism.packetHandler.sendToServer(new PortableTeleporterMessage(PortableTeleporterPacketType.DEL_FREQ, currentHand, freq));
                     Mekanism.packetHandler.sendToServer(new PortableTeleporterMessage(PortableTeleporterPacketType.DATA_REQUEST, currentHand, null));
@@ -358,8 +359,8 @@ public class GuiTeleporter extends GuiMekanismTile<TileEntityTeleporter> {
             return;
         }
         if (tileEntity != null) {
-            TileNetworkList data = TileNetworkList.withContents(0, freq, !privateMode);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            //TileNetworkList data = TileNetworkList.withContents(0, freq, !privateMode);
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 0, freq, !privateMode));
         } else {
             Frequency newFreq = new Frequency(freq, null).setPublic(!privateMode);
             Mekanism.packetHandler.sendToServer(new PortableTeleporterMessage(PortableTeleporterPacketType.SET_FREQ, currentHand, newFreq));

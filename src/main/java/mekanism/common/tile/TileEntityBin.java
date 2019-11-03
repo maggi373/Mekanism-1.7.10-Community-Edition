@@ -247,7 +247,7 @@ public class TileEntityBin extends TileEntityBasicBlock implements ISidedInvento
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         super.writePacket(buf, type);
         buf.writeBoolean(isActive);
         buf.writeInt(getItemCount());

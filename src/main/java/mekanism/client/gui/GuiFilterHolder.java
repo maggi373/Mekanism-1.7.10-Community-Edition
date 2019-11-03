@@ -11,6 +11,7 @@ import mekanism.api.EnumColor;
 import mekanism.api.TileNetworkList;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.client.sound.SoundHandler;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.misc.HashList;
 import mekanism.common.Mekanism;
 import mekanism.common.misc.OreDictCache;
@@ -19,6 +20,7 @@ import mekanism.common.content.filter.IItemStackFilter;
 import mekanism.common.content.filter.IMaterialFilter;
 import mekanism.common.content.filter.IModIDFilter;
 import mekanism.common.content.filter.IOreDictFilter;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
 import net.minecraft.inventory.Container;
@@ -26,6 +28,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.input.Mouse;
+import scala.util.control.Exception;
 
 @SideOnly(Side.CLIENT)
 public abstract class GuiFilterHolder<TILE extends TileEntityContainerBlock, FILTER extends IFilter> extends GuiMekanismTile<TILE> {
@@ -231,8 +234,8 @@ public abstract class GuiFilterHolder<TILE extends TileEntityContainerBlock, FIL
         modIDStacks.get(filter).stackIndex = -1;
     }
 
-    protected void sendDataFromClick(TileNetworkList data) {
-        Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+    protected void sendDataFromClick(Object... obj) {
+        Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, obj));
         SoundHandler.playSound(net.minecraft.init.SoundEvents.UI_BUTTON_CLICK);
     }
 

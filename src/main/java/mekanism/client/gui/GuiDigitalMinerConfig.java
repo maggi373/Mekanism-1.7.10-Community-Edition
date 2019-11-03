@@ -7,6 +7,7 @@ import mekanism.api.TileNetworkList;
 import mekanism.client.gui.button.GuiButtonDisableableImage;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.client.sound.SoundHandler;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.misc.HashList;
 import mekanism.common.Mekanism;
 import mekanism.common.config.MekanismConfig;
@@ -17,6 +18,7 @@ import mekanism.common.content.filter.IModIDFilter;
 import mekanism.common.content.filter.IOreDictFilter;
 import mekanism.common.content.miner.MinerFilter;
 import mekanism.common.inventory.container.ContainerNull;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketDigitalMinerGui.DigitalMinerGuiMessage;
 import mekanism.common.network.PacketDigitalMinerGui.MinerGuiPacket;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
@@ -97,14 +99,14 @@ public class GuiDigitalMinerConfig extends GuiFilterHolder<TileEntityDigitalMine
                         if (index > 0) {
                             if (xAxis >= arrowX && xAxis <= arrowX + 10 && yAxis >= yStart + 14 && yAxis <= yStart + 20) {
                                 //Process up button click
-                                sendDataFromClick(TileNetworkList.withContents(11, index));
+                                sendDataFromClick(11, index);
                                 return;
                             }
                         }
                         if (index < tileEntity.filters.size() - 1) {
                             if (xAxis >= arrowX && xAxis <= arrowX + 10 && yAxis >= yStart + 21 && yAxis <= yStart + 27) {
                                 //Process down button click
-                                sendDataFromClick(TileNetworkList.withContents(12, index));
+                                sendDataFromClick(12, index);
                                 return;
                             }
                         }
@@ -177,7 +179,7 @@ public class GuiDigitalMinerConfig extends GuiFilterHolder<TileEntityDigitalMine
         } else if (guibutton.id == setMaxButton.id) {
             setMaxY();
         } else if (guibutton.id == inverseButton.id) {
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(10)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 10));
         }
     }
 
@@ -257,7 +259,7 @@ public class GuiDigitalMinerConfig extends GuiFilterHolder<TileEntityDigitalMine
     private void setRadius() {
         if (!radiusField.getText().isEmpty()) {
             int toUse = Math.max(0, Math.min(Integer.parseInt(radiusField.getText()), MekanismConfig.current().general.digitalMinerMaxRadius.val()));
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(6, toUse)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 6, toUse));
             radiusField.setText("");
         }
     }
@@ -265,7 +267,7 @@ public class GuiDigitalMinerConfig extends GuiFilterHolder<TileEntityDigitalMine
     private void setMinY() {
         if (!minField.getText().isEmpty()) {
             int toUse = Math.max(0, Math.min(Integer.parseInt(minField.getText()), tileEntity.maxY));
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(7, toUse)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER,7, toUse));
             minField.setText("");
         }
     }
@@ -273,7 +275,7 @@ public class GuiDigitalMinerConfig extends GuiFilterHolder<TileEntityDigitalMine
     private void setMaxY() {
         if (!maxField.getText().isEmpty()) {
             int toUse = Math.max(tileEntity.minY, Math.min(Integer.parseInt(maxField.getText()), 255));
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(8, toUse)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER,8, toUse));
             maxField.setText("");
         }
     }

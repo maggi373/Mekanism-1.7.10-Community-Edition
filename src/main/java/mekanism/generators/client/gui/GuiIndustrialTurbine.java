@@ -10,8 +10,10 @@ import mekanism.client.gui.element.GuiRateBar;
 import mekanism.client.gui.element.GuiRateBar.IRateInfoHandler;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.inventory.container.ContainerFilter;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.TileEntityGasTank.GasMode;
 import mekanism.common.util.LangUtils;
@@ -114,8 +116,7 @@ public class GuiIndustrialTurbine extends GuiEmbeddedGaugeTile<TileEntityTurbine
         int xAxis = x - guiLeft;
         int yAxis = y - guiTop;
         if (xAxis > 160 && xAxis < 169 && yAxis > 73 && yAxis < 82) {
-            TileNetworkList data = TileNetworkList.withContents((byte) 0);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 0));
             SoundHandler.playSound(SoundEvents.UI_BUTTON_CLICK);
         }
     }

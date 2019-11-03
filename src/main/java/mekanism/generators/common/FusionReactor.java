@@ -7,8 +7,10 @@ import mekanism.api.Coord4D;
 import mekanism.api.IHeatTransfer;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.misc.LaserManager;
 import mekanism.common.Mekanism;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.registry.MekanismFluids;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
@@ -248,7 +250,7 @@ public class FusionReactor {
         burning = burning && keepBurning;
 
         if (!controller.getWorld().isRemote) {
-            Mekanism.packetHandler.sendToDimension(new TileEntityMessage(controller), controller.getWorld().provider.getDimension());
+            Mekanism.packetHandler.sendToDimension(new PacketByteBuf.ByteBufMessage(controller, ByteBufType.SERVER_TO_CLIENT), controller.getWorld().provider.getDimension());
         }
     }
 
@@ -267,7 +269,7 @@ public class FusionReactor {
         formed = true;
 
         if (!controller.getWorld().isRemote) {
-            Mekanism.packetHandler.sendToDimension(new TileEntityMessage(controller), controller.getWorld().provider.getDimension());
+            Mekanism.packetHandler.sendToDimension(new PacketByteBuf.ByteBufMessage(controller, ByteBufType.SERVER_TO_CLIENT), controller.getWorld().provider.getDimension());
         }
     }
 

@@ -4,6 +4,8 @@ import io.netty.buffer.ByteBuf;
 import mekanism.api.Coord4D;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
+import mekanism.common.base.ITileByteBuf;
 import mekanism.common.handler.PacketHandler;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.base.ITileNetwork;
@@ -32,7 +34,7 @@ public class PacketConfigurationUpdate implements IMessageHandler<ConfigurationU
         PacketHandler.handlePacket(() -> {
             TileEntity tile = message.coord4D.getTileEntity(player.world);
             if (tile instanceof ISideConfiguration) {
-                ITileNetwork network = CapabilityUtils.getCapability(tile, Capabilities.TILE_NETWORK_CAPABILITY, null);
+                ITileByteBuf network = CapabilityUtils.getCapability(tile, Capabilities.TILE_BYTE_BUF, null);
                 ISideConfiguration config = (ISideConfiguration) tile;
 
                 if (message.packetType == ConfigurationPacket.EJECT) {
@@ -47,7 +49,7 @@ public class PacketConfigurationUpdate implements IMessageHandler<ConfigurationU
                     }
 
                     tile.markDirty();
-                    Mekanism.packetHandler.sendToAllTracking(new TileEntityMessage(message.coord4D, network.getNetworkedData()), message.coord4D);
+                    Mekanism.packetHandler.sendToAllTracking(new PacketByteBuf.ByteBufMessage((TileEntity & ITileByteBuf) network, ByteBufType.SERVER_TO_CLIENT), message.coord4D);
                     //Notify the neighbor on that side our state changed
                     MekanismUtils.notifyNeighborOfChange(tile.getWorld(), message.configIndex, tile.getPos());
                 } else if (message.packetType == ConfigurationPacket.EJECT_COLOR) {
@@ -73,7 +75,7 @@ public class PacketConfigurationUpdate implements IMessageHandler<ConfigurationU
                     config.getEjector().setStrictInput(!config.getEjector().hasStrictInput());
                 }
                 for (EntityPlayer p : ((TileEntityBasicBlock) config).playersUsing) {
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(message.coord4D, network.getNetworkedData()), (EntityPlayerMP) p);
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage((TileEntity & ITileByteBuf) network, ByteBufType.SERVER_TO_CLIENT), (EntityPlayerMP) p);
                 }
             }
         }, player);

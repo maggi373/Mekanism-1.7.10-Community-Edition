@@ -1,37 +1,19 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.Arrays;
-import java.util.Objects;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigCardAccess.ISpecialConfigData;
-import mekanism.api.TileNetworkList;
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTank;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
-import mekanism.api.gas.IGasItem;
+import mekanism.api.gas.*;
 import mekanism.api.infuse.InfuseObject;
 import mekanism.api.infuse.InfuseRegistry;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.InfuseStorage;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismBlocks;
-import mekanism.common.MekanismItems;
-import mekanism.common.PacketHandler;
-import mekanism.common.SideData;
-import mekanism.common.Upgrade;
-import mekanism.common.base.IComparatorSupport;
+import mekanism.common.base.*;
 import mekanism.common.base.IFactory.MachineFuelType;
 import mekanism.common.base.IFactory.RecipeType;
-import mekanism.common.base.ISideConfiguration;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.ITierUpgradeable;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.integration.computer.IComputerIntegration;
 import mekanism.common.misc.InfuseStorage;
 import mekanism.common.misc.SideData;
@@ -42,12 +24,7 @@ import mekanism.common.recipe.inputs.AdvancedMachineInput;
 import mekanism.common.recipe.inputs.DoubleMachineInput;
 import mekanism.common.recipe.inputs.InfusionInput;
 import mekanism.common.recipe.inputs.ItemStackInput;
-import mekanism.common.recipe.machines.AdvancedMachineRecipe;
-import mekanism.common.recipe.machines.BasicMachineRecipe;
-import mekanism.common.recipe.machines.ChanceMachineRecipe;
-import mekanism.common.recipe.machines.DoubleMachineRecipe;
-import mekanism.common.recipe.machines.MachineRecipe;
-import mekanism.common.recipe.machines.MetallurgicInfuserRecipe;
+import mekanism.common.recipe.machines.*;
 import mekanism.common.recipe.outputs.ItemStackOutput;
 import mekanism.common.registry.MekanismBlocks;
 import mekanism.common.registry.MekanismItems;
@@ -57,23 +34,20 @@ import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.prefab.TileEntityAdvancedElectricMachine;
 import mekanism.common.tile.prefab.TileEntityMachine;
-import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.GasUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.ItemDataUtils;
-import mekanism.common.util.LangUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.StackUtils;
-import mekanism.common.util.StatUtils;
-import mekanism.common.util.TileUtils;
+import mekanism.common.util.*;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.items.ItemHandlerHelper;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.Objects;
 
 public class TileEntityFactory extends TileEntityMachine implements IComputerIntegration, ISideConfiguration, IGasHandler, ISpecialConfigData, ITierUpgradeable,
       ISustainedData, IComparatorSupport {
@@ -686,32 +660,30 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int type1 = buf.readInt();
+            if (type1 == 0) {
                 sorting = !sorting;
-            } else if (type == 1) {
+            } else if (type1 == 1) {
                 gasTank.setGas(null);
                 infuseStored.setEmpty();
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
             RecipeType oldRecipe = recipeType;
-            recipeType = RecipeType.values()[dataStream.readInt()];
+            recipeType = RecipeType.values()[buf.readInt()];
             upgradeComponent.setSupported(Upgrade.GAS, recipeType.fuelEnergyUpgrades());
-            recipeTicks = dataStream.readInt();
-            sorting = dataStream.readBoolean();
-            upgraded = dataStream.readBoolean();
-            lastUsage = dataStream.readDouble();
-            int amount = dataStream.readInt();
+            recipeTicks = buf.readInt();
+            sorting = buf.readBoolean();
+            upgraded = buf.readBoolean();
+            lastUsage = buf.readDouble();
+            int amount = buf.readInt();
             if (amount > 0) {
                 infuseStored.setAmount(amount);
-                infuseStored.setType(InfuseRegistry.get(PacketHandler.readString(dataStream)));
+                infuseStored.setType(InfuseRegistry.get(PacketHandler.readString(buf)));
             } else {
                 infuseStored.setEmpty();
             }
@@ -724,14 +696,40 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
             }
 
             for (int i = 0; i < tier.processes; i++) {
-                progress[i] = dataStream.readInt();
+                progress[i] = buf.readInt();
             }
-            TileUtils.readTankData(dataStream, gasTank);
+            TileUtils.readTankData(buf, gasTank);
             if (upgraded) {
                 markDirty();
                 MekanismUtils.updateBlock(world, getPos());
                 upgraded = false;
             }
+        }
+    }
+
+    @Override
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(recipeType.ordinal());
+            buf.writeInt(recipeTicks);
+            buf.writeBoolean(sorting);
+            buf.writeBoolean(upgraded);
+            buf.writeDouble(lastUsage);
+
+            buf.writeInt(infuseStored.getAmount());
+            if (infuseStored.getAmount() > 0) {
+                ByteBufUtils.writeUTF8String(buf, infuseStored.getType().name);
+            }
+            for (int i : progress) {
+                buf.writeInt(i);
+            }
+            TileUtils.addTankData(buf, gasTank);
+            upgraded = false;
         }
     }
 
@@ -772,27 +770,6 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
         }
         nbtTags.setTag("gasTank", gasTank.write(new NBTTagCompound()));
         return nbtTags;
-    }
-
-    @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-
-        data.add(recipeType.ordinal());
-        data.add(recipeTicks);
-        data.add(sorting);
-        data.add(upgraded);
-        data.add(lastUsage);
-
-        data.add(infuseStored.getAmount());
-        if (infuseStored.getAmount() > 0) {
-            data.add(infuseStored.getType().name);
-        }
-
-        data.add(progress);
-        TileUtils.addTankData(data, gasTank);
-        upgraded = false;
-        return data;
     }
 
     public int getInputSlot(int operation) {

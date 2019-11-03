@@ -13,6 +13,9 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
+/**
+ * Slower than PacketByteBuf but NBT has identifier
+ */
 public class PacketTileNBT implements IMessageHandler<PacketTileNBT.TileNBTMessage, IMessage> {
 
     @Override

@@ -302,7 +302,7 @@ public abstract class TileEntitySidedPipe extends TileEntity implements ITileByt
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         if (Mekanism.hooks.MCMPLoaded) {
             MultipartTileNetworkJoiner.addMultipartHeader(this, buf, null);
         }

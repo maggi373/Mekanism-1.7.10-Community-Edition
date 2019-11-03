@@ -1,19 +1,10 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import javax.annotation.Nonnull;
 import mekanism.api.Chunk3D;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
-import mekanism.common.MekanismBlocks;
-import mekanism.common.PacketHandler;
-import mekanism.common.Upgrade;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IComparatorSupport;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.IUpgradeTile;
@@ -49,8 +40,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import javax.annotation.Nonnull;
+import java.util.*;
 
 public class TileEntityTeleporter extends TileEntityElectricBlock implements IComputerIntegration, IChunkLoader, IFrequencyHandler, IRedstoneControl, ISecurityTile,
       IUpgradeTile, IComparatorSupport {
@@ -405,16 +400,16 @@ public class TileEntityTeleporter extends TileEntityElectricBlock implements ICo
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
-                String name = PacketHandler.readString(dataStream);
-                boolean isPublic = dataStream.readBoolean();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int type1 = buf.readInt();
+            if (type1 == 0) {
+                String name = PacketHandler.readString(buf);
+                boolean isPublic = buf.readBoolean();
                 setFrequency(name, isPublic);
-            } else if (type == 1) {
-                String freq = PacketHandler.readString(dataStream);
-                boolean isPublic = dataStream.readBoolean();
+            } else if (type1 == 1) {
+                String freq = PacketHandler.readString(buf);
+                boolean isPublic = buf.readBoolean();
                 FrequencyManager manager = getManager(new Frequency(freq, null).setPublic(isPublic));
                 if (manager != null) {
                     manager.remove(freq, getSecurity().getOwnerUUID());
@@ -422,63 +417,67 @@ public class TileEntityTeleporter extends TileEntityElectricBlock implements ICo
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            if (dataStream.readBoolean()) {
-                frequency = new Frequency(dataStream);
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            if (buf.readBoolean()) {
+                frequency = new Frequency(buf);
             } else {
                 frequency = null;
             }
 
-            status = dataStream.readByte();
-            shouldRender = dataStream.readBoolean();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
+            status = buf.readByte();
+            shouldRender = buf.readBoolean();
+            controlType = RedstoneControl.values()[buf.readInt()];
 
             publicCache.clear();
             privateCache.clear();
 
-            int amount = dataStream.readInt();
+            int amount = buf.readInt();
             for (int i = 0; i < amount; i++) {
-                publicCache.add(new Frequency(dataStream));
+                publicCache.add(new Frequency(buf));
             }
-            amount = dataStream.readInt();
+            amount = buf.readInt();
             for (int i = 0; i < amount; i++) {
-                privateCache.add(new Frequency(dataStream));
+                privateCache.add(new Frequency(buf));
             }
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-
-        if (frequency != null) {
-            data.add(true);
-            frequency.write(data);
-        } else {
-            data.add(false);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            ByteBufUtils.writeUTF8String(buf, (String) obj[1]);
+            buf.writeBoolean((Boolean) obj[2]);
+            return;
         }
-
-        data.add(status);
-        data.add(shouldRender);
-        data.add(controlType.ordinal());
-        data.add(Mekanism.publicTeleporters.getFrequencies().size());
-        for (Frequency freq : Mekanism.publicTeleporters.getFrequencies()) {
-            freq.write(data);
-        }
-
-        FrequencyManager manager = getManager(new Frequency(null, null).setPublic(false));
-        if (manager != null) {
-            data.add(manager.getFrequencies().size());
-            for (Frequency freq : manager.getFrequencies()) {
-                freq.write(data);
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            if (frequency != null) {
+                buf.writeBoolean(true);
+                frequency.write(buf);
+            } else {
+                buf.writeBoolean(false);
             }
-        } else {
-            data.add(0);
+
+            buf.writeByte(status);
+            buf.writeBoolean(shouldRender);
+            buf.writeInt(controlType.ordinal());
+            buf.writeInt(Mekanism.publicTeleporters.getFrequencies().size());
+            for (Frequency freq : Mekanism.publicTeleporters.getFrequencies()) {
+                freq.write(buf);
+            }
+
+            FrequencyManager manager = getManager(new Frequency(null, null).setPublic(false));
+            if (manager != null) {
+                buf.writeInt(manager.getFrequencies().size());
+                for (Frequency freq : manager.getFrequencies()) {
+                    freq.write(buf);
+                }
+            } else {
+                buf.writeInt(0);
+            }
         }
-        return data;
     }
 
     @Override

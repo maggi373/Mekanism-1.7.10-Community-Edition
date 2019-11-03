@@ -112,24 +112,25 @@ public class TileEntityChemicalWasher extends TileEntityMachine implements IGasH
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            clientEnergyUsed = dataStream.readDouble();
-            TileUtils.readTankData(dataStream, fluidTank);
-            TileUtils.readTankData(dataStream, inputTank);
-            TileUtils.readTankData(dataStream, outputTank);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            clientEnergyUsed = buf.readDouble();
+            TileUtils.readTankData(buf, fluidTank);
+            TileUtils.readTankData(buf, inputTank);
+            TileUtils.readTankData(buf, outputTank);
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(clientEnergyUsed);
-        TileUtils.addTankData(data, fluidTank);
-        TileUtils.addTankData(data, inputTank);
-        TileUtils.addTankData(data, outputTank);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeDouble(clientEnergyUsed);
+            TileUtils.addTankData(buf, fluidTank);
+            TileUtils.addTankData(buf, inputTank);
+            TileUtils.addTankData(buf, outputTank);
+        }
     }
 
     @Override

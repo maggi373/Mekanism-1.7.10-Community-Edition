@@ -20,28 +20,32 @@ public class PacketByteBuf implements IMessageHandler<PacketByteBuf.ByteBufMessa
             return null;
         }
         PacketHandler.handlePacket(() -> {
-            ITileByteBuf tileEntity = (ITileByteBuf) message.coord4D.getTileEntity(player.world);
-            tileEntity.readPacket(message.buf, message.type);
-            message.buf.release();
+            TileEntity tileEntity = message.coord4D.getTileEntity(player.world);
+            if(tileEntity instanceof ITileByteBuf) {
+                ((ITileByteBuf) tileEntity).readPacket(message.buf, message.type);
+                message.buf.release();
+            }
         }, player);
         return null;
     }
 
     public static class ByteBufMessage implements IMessage {
 
-        public ITileByteBuf tile;
-        public Coord4D coord4D;
-        public ByteBuf buf;
-        public ByteBufType type;
+        public ITileByteBuf tile; // Origin
+        public Coord4D coord4D; // Network
+        public ByteBuf buf; // Network
+        public ByteBufType type; // Network
+        public Object[] obj; // Origin
 
         public ByteBufMessage() {
 
         }
 
-        public <T extends TileEntity & ITileByteBuf> ByteBufMessage(T tile, ByteBufType type) {
+        public <T extends TileEntity & ITileByteBuf> ByteBufMessage(T tile, ByteBufType type, Object... obj) {
             this.coord4D = Coord4D.get(tile);
             this.tile = tile;
             this.type = type;
+            this.obj = obj;
         }
 
         @Override
@@ -55,7 +59,7 @@ public class PacketByteBuf implements IMessageHandler<PacketByteBuf.ByteBufMessa
         public void toBytes(ByteBuf buf) {
             coord4D.write(buf);
             buf.writeInt(type.ordinal());
-            tile.writePacket(buf, type);
+            tile.writePacket(buf, type, obj);
         }
     }
 }

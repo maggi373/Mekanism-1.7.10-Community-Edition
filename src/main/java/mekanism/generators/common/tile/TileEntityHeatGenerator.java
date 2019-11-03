@@ -5,10 +5,7 @@ import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.IHeatTransfer;
 import mekanism.api.TileNetworkList;
-import mekanism.common.base.FluidHandlerWrapper;
-import mekanism.common.base.IComparatorSupport;
-import mekanism.common.base.IFluidHandlerWrapper;
-import mekanism.common.base.ISustainedData;
+import mekanism.common.base.*;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.util.CapabilityUtils;
@@ -195,27 +192,27 @@ public class TileEntityHeatGenerator extends TileEntityGenerator implements IFlu
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            producingEnergy = buf.readDouble();
 
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            producingEnergy = dataStream.readDouble();
+            lastTransferLoss = buf.readDouble();
+            lastEnvironmentLoss = buf.readDouble();
 
-            lastTransferLoss = dataStream.readDouble();
-            lastEnvironmentLoss = dataStream.readDouble();
-
-            TileUtils.readTankData(dataStream, lavaTank);
+            TileUtils.readTankData(buf, lavaTank);
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(producingEnergy);
-        data.add(lastTransferLoss);
-        data.add(lastEnvironmentLoss);
-        TileUtils.addTankData(data, lavaTank);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeDouble(producingEnergy);
+            buf.writeDouble(lastTransferLoss);
+            buf.writeDouble(lastEnvironmentLoss);
+            TileUtils.addTankData(buf, lavaTank);
+        }
     }
 
     @Override

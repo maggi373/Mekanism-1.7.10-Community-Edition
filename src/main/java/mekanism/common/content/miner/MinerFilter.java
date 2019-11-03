@@ -59,14 +59,14 @@ public abstract class MinerFilter implements IFilter {
         }
     }
 
-    public void write(TileNetworkList data) {
-        data.add(requireStack);
+    public void write(ByteBuf buf) {
+        buf.writeBoolean(requireStack);
         if (!replaceStack.isEmpty()) {
-            data.add(true);
-            data.add(MekanismUtils.getID(replaceStack));
-            data.add(replaceStack.getItemDamage());
+            buf.writeBoolean(true);
+            buf.writeInt(MekanismUtils.getID(replaceStack));
+            buf.writeInt(replaceStack.getItemDamage());
         } else {
-            data.add(false);
+            buf.writeBoolean(false);
         }
     }
 

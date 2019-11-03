@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.TileNetworkList;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IBoundingBlock;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.util.ChargeUtils;
@@ -66,21 +67,21 @@ public class TileEntityWindGenerator extends TileEntityGenerator implements IBou
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-
-        if (world.isRemote) {
-            currentMultiplier = dataStream.readFloat();
-            isBlacklistDimension = dataStream.readBoolean();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            currentMultiplier = buf.readFloat();
+            isBlacklistDimension = buf.readBoolean();
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(currentMultiplier);
-        data.add(isBlacklistDimension);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeFloat(currentMultiplier);
+            buf.writeBoolean(isBlacklistDimension);
+        }
     }
 
     /**

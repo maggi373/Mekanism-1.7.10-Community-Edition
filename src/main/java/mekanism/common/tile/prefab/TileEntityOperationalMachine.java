@@ -2,6 +2,7 @@ package mekanism.common.tile.prefab;
 
 import io.netty.buffer.ByteBuf;
 import mekanism.api.TileNetworkList;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IComparatorSupport;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.misc.Upgrade;
@@ -30,20 +31,21 @@ public abstract class TileEntityOperationalMachine extends TileEntityMachine imp
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            operatingTicks = dataStream.readInt();
-            ticksRequired = dataStream.readInt();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            operatingTicks = buf.readInt();
+            ticksRequired = buf.readInt();
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(operatingTicks);
-        data.add(ticksRequired);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(operatingTicks);
+            buf.writeInt(ticksRequired);
+        }
     }
 
     @Override

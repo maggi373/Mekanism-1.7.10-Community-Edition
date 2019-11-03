@@ -5,6 +5,8 @@ import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.gui.element.GuiTileEntityElement;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.TileEntityLaserAmplifier;
 import mekanism.common.util.LangUtils;
@@ -57,7 +59,7 @@ public class GuiAmplifierTab extends GuiTileEntityElement<TileEntityLaserAmplifi
     @Override
     public void mouseClicked(int xAxis, int yAxis, int button) {
         if (button == 0 && inBounds(xAxis, yAxis)) {
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(3)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 3));
             SoundHandler.playSound(SoundEvents.UI_BUTTON_CLICK);
         }
     }

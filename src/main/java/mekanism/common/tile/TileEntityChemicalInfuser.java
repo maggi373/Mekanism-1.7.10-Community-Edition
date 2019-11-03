@@ -3,10 +3,7 @@ package mekanism.common.tile;
 import io.netty.buffer.ByteBuf;
 import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
-import mekanism.common.base.IRedstoneControl;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.ITankManager;
-import mekanism.common.base.IUpgradeTile;
+import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.misc.Upgrade;
@@ -108,24 +105,25 @@ public class TileEntityChemicalInfuser extends TileEntityMachine implements IGas
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            clientEnergyUsed = dataStream.readDouble();
-            TileUtils.readTankData(dataStream, leftTank);
-            TileUtils.readTankData(dataStream, rightTank);
-            TileUtils.readTankData(dataStream, centerTank);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            clientEnergyUsed = buf.readDouble();
+            TileUtils.readTankData(buf, leftTank);
+            TileUtils.readTankData(buf, rightTank);
+            TileUtils.readTankData(buf, centerTank);
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(clientEnergyUsed);
-        TileUtils.addTankData(data, leftTank);
-        TileUtils.addTankData(data, rightTank);
-        TileUtils.addTankData(data, centerTank);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeDouble(clientEnergyUsed);
+            TileUtils.addTankData(buf, leftTank);
+            TileUtils.addTankData(buf, rightTank);
+            TileUtils.addTankData(buf, centerTank);
+        }
     }
 
     @Override

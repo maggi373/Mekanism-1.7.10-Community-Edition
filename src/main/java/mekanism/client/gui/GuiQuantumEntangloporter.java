@@ -13,9 +13,11 @@ import mekanism.client.gui.element.tab.GuiTransporterConfigTab;
 import mekanism.client.gui.element.tab.GuiUpgradeTab;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.frequency.Frequency;
 import mekanism.common.frequency.FrequencyManager;
 import mekanism.common.inventory.container.ContainerQuantumEntangloporter;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.TileEntityQuantumEntangloporter;
 import mekanism.common.util.LangUtils;
@@ -74,8 +76,7 @@ public class GuiQuantumEntangloporter extends GuiMekanismTile<TileEntityQuantumE
         if (freq.isEmpty()) {
             return;
         }
-        TileNetworkList data = TileNetworkList.withContents(0, freq, !privateMode);
-        Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+        Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 0, freq, !privateMode));
     }
 
     public String getSecurity(Frequency freq) {
@@ -167,8 +168,7 @@ public class GuiQuantumEntangloporter extends GuiMekanismTile<TileEntityQuantumE
             int selection = scrollList.getSelection();
             if (selection != -1) {
                 Frequency freq = privateMode ? tileEntity.privateCache.get(selection) : tileEntity.publicCache.get(selection);
-                TileNetworkList data = TileNetworkList.withContents(1, freq.name, freq.publicFreq);
-                Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+                Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 1, freq.name, freq.publicFreq));
                 scrollList.clearSelection();
             }
         } else if (guibutton.id == checkboxButton.id) {

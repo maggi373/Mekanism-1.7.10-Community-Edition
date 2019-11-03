@@ -1,7 +1,6 @@
 package mekanism.common.tile.prefab;
 
 import io.netty.buffer.ByteBuf;
-import mekanism.api.TileNetworkList;
 import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.IUpgradeTile;
@@ -13,7 +12,6 @@ import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -68,11 +66,13 @@ public abstract class TileEntityMachine extends TileEntityEffectsBlock implement
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         super.writePacket(buf, type);
-        buf.writeInt(controlType.ordinal());
-        buf.writeDouble(energyPerTick);
-        buf.writeDouble(maxEnergy);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(controlType.ordinal());
+            buf.writeDouble(energyPerTick);
+            buf.writeDouble(maxEnergy);
+        }
     }
 
     @Override

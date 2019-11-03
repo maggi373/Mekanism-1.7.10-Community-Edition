@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import mekanism.api.Coord4D;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.handler.PacketHandler;
 import mekanism.common.content.miner.MinerFilter;
 import mekanism.common.content.transporter.TransporterFilter;
@@ -32,19 +33,21 @@ public class PacketNewFilter implements IMessageHandler<NewFilterMessage, IMessa
                 TileEntityLogisticalSorter sorter = (TileEntityLogisticalSorter) message.coord4D.getTileEntity(worldServer);
                 sorter.filters.add(message.tFilter);
                 for (EntityPlayer iterPlayer : sorter.playersUsing) {
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(sorter, sorter.getFilterPacket(new TileNetworkList())), (EntityPlayerMP) iterPlayer);
+                    //Mekanism.packetHandler.sendTo(new TileEntityMessage(sorter, sorter.getFilterPacket(new TileNetworkList())), (EntityPlayerMP) iterPlayer);
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(sorter, ByteBufType.SERVER_TO_CLIENT, 2), (EntityPlayerMP) iterPlayer);
                 }
             } else if (message.type == 1 && message.coord4D.getTileEntity(worldServer) instanceof TileEntityDigitalMiner) {
                 TileEntityDigitalMiner miner = (TileEntityDigitalMiner) message.coord4D.getTileEntity(worldServer);
                 miner.filters.add(message.mFilter);
                 for (EntityPlayer iterPlayer : miner.playersUsing) {
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(miner, miner.getFilterPacket(new TileNetworkList())), (EntityPlayerMP) iterPlayer);
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(miner, ByteBufType.SERVER_TO_CLIENT, 2), (EntityPlayerMP) iterPlayer);
                 }
             } else if (message.type == 2 && message.coord4D.getTileEntity(worldServer) instanceof TileEntityOredictionificator) {
                 TileEntityOredictionificator oredictionificator = (TileEntityOredictionificator) message.coord4D.getTileEntity(worldServer);
                 oredictionificator.filters.add(message.oFilter);
                 for (EntityPlayer iterPlayer : oredictionificator.playersUsing) {
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(oredictionificator, oredictionificator.getFilterPacket(new TileNetworkList())), (EntityPlayerMP) iterPlayer);
+                    //Mekanism.packetHandler.sendTo(new TileEntityMessage(oredictionificator, oredictionificator.getFilterPacket(new TileNetworkList())), (EntityPlayerMP) iterPlayer);
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(oredictionificator, ByteBufType.SERVER_TO_CLIENT, 2), (EntityPlayerMP) iterPlayer);
                 }
             }
         });
@@ -85,15 +88,13 @@ public class PacketNewFilter implements IMessageHandler<NewFilterMessage, IMessa
         public void toBytes(ByteBuf dataStream) {
             coord4D.write(dataStream);
             dataStream.writeByte(type);
-            TileNetworkList data = new TileNetworkList();
             if (type == 0) {
-                tFilter.write(data);
+                tFilter.write(dataStream);
             } else if (type == 1) {
-                mFilter.write(data);
+                mFilter.write(dataStream);
             } else if (type == 2) {
-                oFilter.write(data);
+                oFilter.write(dataStream);
             }
-            PacketHandler.encode(data.toArray(), dataStream);
         }
 
         @Override

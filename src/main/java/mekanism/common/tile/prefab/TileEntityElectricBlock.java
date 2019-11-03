@@ -132,7 +132,7 @@ public abstract class TileEntityElectricBlock extends TileEntityContainerBlock i
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         super.writePacket(buf, type);
         if(type == ByteBufType.SERVER_TO_CLIENT) {
             buf.writeDouble(getEnergy());

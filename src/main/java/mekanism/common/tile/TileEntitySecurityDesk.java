@@ -1,15 +1,13 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.UUID;
-import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
-import mekanism.common.PacketHandler;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IBoundingBlock;
 import mekanism.common.frequency.Frequency;
 import mekanism.common.frequency.FrequencyManager;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.network.PacketSecurityUpdate.SecurityPacket;
 import mekanism.common.network.PacketSecurityUpdate.SecurityUpdateMessage;
 import mekanism.common.security.IOwnerItem;
@@ -26,10 +24,13 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
+
+import javax.annotation.Nonnull;
+import java.util.UUID;
 
 public class TileEntitySecurityDesk extends TileEntityContainerBlock implements IBoundingBlock {
 
@@ -121,46 +122,78 @@ public class TileEntitySecurityDesk extends TileEntityContainerBlock implements 
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int type1 = buf.readInt();
+            if (type1 == 0) {
                 if (frequency != null) {
-                    frequency.trusted.add(PacketHandler.readString(dataStream));
+                    frequency.trusted.add(PacketHandler.readString(buf));
                 }
-            } else if (type == 1) {
+            } else if (type1 == 1) {
                 if (frequency != null) {
-                    frequency.trusted.remove(PacketHandler.readString(dataStream));
+                    frequency.trusted.remove(PacketHandler.readString(buf));
                 }
-            } else if (type == 2) {
+            } else if (type1 == 2) {
                 if (frequency != null) {
                     frequency.override = !frequency.override;
                     Mekanism.packetHandler.sendToAll(new SecurityUpdateMessage(SecurityPacket.UPDATE, ownerUUID, new SecurityData(frequency)));
                 }
-            } else if (type == 3) {
+            } else if (type1 == 3) {
                 if (frequency != null) {
-                    frequency.securityMode = SecurityMode.values()[dataStream.readInt()];
+                    frequency.securityMode = SecurityMode.values()[buf.readInt()];
                     Mekanism.packetHandler.sendToAll(new SecurityUpdateMessage(SecurityPacket.UPDATE, ownerUUID, new SecurityData(frequency)));
                 }
             }
             MekanismUtils.saveChunk(this);
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            if (dataStream.readBoolean()) {
-                clientOwner = PacketHandler.readString(dataStream);
-                ownerUUID = PacketHandler.readUUID(dataStream);
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            if (buf.readBoolean()) {
+                clientOwner = PacketHandler.readString(buf);
+                ownerUUID = PacketHandler.readUUID(buf);
             } else {
                 clientOwner = null;
                 ownerUUID = null;
             }
-            if (dataStream.readBoolean()) {
-                frequency = new SecurityFrequency(dataStream);
+            if (buf.readBoolean()) {
+                frequency = new SecurityFrequency(buf);
             } else {
                 frequency = null;
+            }
+        }
+    }
+
+    @Override
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            try {
+                Object obj2 = obj[1];
+                if (obj2 instanceof String) {
+                    ByteBufUtils.writeUTF8String(buf, (String) obj2);
+                } else {
+                    buf.writeInt((Integer) obj2);
+                }
+            } catch (Exception ignored) {
+
+            }
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            if (ownerUUID != null) {
+                buf.writeBoolean(true);
+                ByteBufUtils.writeUTF8String(buf, MekanismUtils.getLastKnownUsername(ownerUUID));
+                PacketHandler.writeUUID(buf, ownerUUID);
+            } else {
+                buf.writeBoolean(false);
+            }
+            if (frequency != null) {
+                buf.writeBoolean(true);
+                frequency.write(buf);
+            } else {
+                buf.writeBoolean(false);
             }
         }
     }
@@ -190,26 +223,6 @@ public class TileEntitySecurityDesk extends TileEntityContainerBlock implements 
             nbtTags.setTag("frequency", frequencyTag);
         }
         return nbtTags;
-    }
-
-    @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        if (ownerUUID != null) {
-            data.add(true);
-            data.add(MekanismUtils.getLastKnownUsername(ownerUUID));
-            data.add(ownerUUID.getMostSignificantBits());
-            data.add(ownerUUID.getLeastSignificantBits());
-        } else {
-            data.add(false);
-        }
-        if (frequency != null) {
-            data.add(true);
-            frequency.write(data);
-        } else {
-            data.add(false);
-        }
-        return data;
     }
 
     @Override

@@ -1,30 +1,16 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import mekanism.api.Chunk3D;
 import mekanism.api.Coord4D;
 import mekanism.api.IHeatTransfer;
-import mekanism.api.TileNetworkList;
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTankInfo;
 import mekanism.api.gas.IGasHandler;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
-import mekanism.common.PacketHandler;
-import mekanism.common.SideData.IOState;
-import mekanism.common.Upgrade;
-import mekanism.common.base.FluidHandlerWrapper;
-import mekanism.common.base.IFluidHandlerWrapper;
-import mekanism.common.base.ISideConfiguration;
-import mekanism.common.base.ITankManager;
-import mekanism.common.base.IUpgradeTile;
+import mekanism.common.base.*;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.chunkloading.IChunkLoader;
 import mekanism.common.config.MekanismConfig;
@@ -32,22 +18,14 @@ import mekanism.common.content.entangloporter.InventoryFrequency;
 import mekanism.common.frequency.Frequency;
 import mekanism.common.frequency.FrequencyManager;
 import mekanism.common.frequency.IFrequencyHandler;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.integration.computer.IComputerIntegration;
+import mekanism.common.misc.SideData;
 import mekanism.common.misc.Upgrade;
 import mekanism.common.security.ISecurityTile;
-import mekanism.common.tile.component.TileComponentChunkLoader;
-import mekanism.common.tile.component.TileComponentConfig;
-import mekanism.common.tile.component.TileComponentEjector;
-import mekanism.common.tile.component.TileComponentSecurity;
-import mekanism.common.tile.component.TileComponentUpgrade;
+import mekanism.common.tile.component.*;
 import mekanism.common.tile.prefab.TileEntityElectricBlock;
-import mekanism.common.util.CableUtils;
-import mekanism.common.util.CapabilityUtils;
-import mekanism.common.util.FluidContainerUtils;
-import mekanism.common.util.HeatUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.PipeUtils;
+import mekanism.common.util.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -60,7 +38,14 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock implements ISideConfiguration, ITankManager, IFluidHandlerWrapper, IFrequencyHandler,
       IGasHandler, IHeatTransfer, IComputerIntegration, ISecurityTile, IChunkLoader, IUpgradeTile {
@@ -253,16 +238,16 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
-                String name = PacketHandler.readString(dataStream);
-                boolean isPublic = dataStream.readBoolean();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int i = buf.readInt();
+            if (i == 0) {
+                String name = PacketHandler.readString(buf);
+                boolean isPublic = buf.readBoolean();
                 setFrequency(name, isPublic);
-            } else if (type == 1) {
-                String freq = PacketHandler.readString(dataStream);
-                boolean isPublic = dataStream.readBoolean();
+            } else if (i == 1) {
+                String freq = PacketHandler.readString(buf);
+                boolean isPublic = buf.readBoolean();
                 FrequencyManager manager = getManager(new InventoryFrequency(freq, null).setPublic(isPublic));
                 if (manager != null) {
                     manager.remove(freq, getSecurity().getOwnerUUID());
@@ -270,14 +255,12 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            lastTransferLoss = dataStream.readDouble();
-            lastEnvironmentLoss = dataStream.readDouble();
-            if (dataStream.readBoolean()) {
-                frequency = new InventoryFrequency(dataStream);
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            lastTransferLoss = buf.readDouble();
+            lastEnvironmentLoss = buf.readDouble();
+            if (buf.readBoolean()) {
+                frequency = new InventoryFrequency(buf);
             } else {
                 frequency = null;
             }
@@ -285,45 +268,52 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
             publicCache.clear();
             privateCache.clear();
 
-            int amount = dataStream.readInt();
+            int amount = buf.readInt();
             for (int i = 0; i < amount; i++) {
-                publicCache.add(new InventoryFrequency(dataStream));
+                publicCache.add(new InventoryFrequency(buf));
             }
-            amount = dataStream.readInt();
+            amount = buf.readInt();
             for (int i = 0; i < amount; i++) {
-                privateCache.add(new InventoryFrequency(dataStream));
+                privateCache.add(new InventoryFrequency(buf));
             }
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(lastTransferLoss);
-        data.add(lastEnvironmentLoss);
-
-        if (frequency != null) {
-            data.add(true);
-            frequency.write(data);
-        } else {
-            data.add(false);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            ByteBufUtils.writeUTF8String(buf, (String) obj[1]);
+            buf.writeBoolean((Boolean) obj[2]);
+            return;
         }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeDouble(lastTransferLoss);
+            buf.writeDouble(lastEnvironmentLoss);
 
-        data.add(Mekanism.publicEntangloporters.getFrequencies().size());
-        for (Frequency freq : Mekanism.publicEntangloporters.getFrequencies()) {
-            freq.write(data);
-        }
-
-        FrequencyManager manager = getManager(new InventoryFrequency(null, null).setPublic(false));
-        if (manager != null) {
-            data.add(manager.getFrequencies().size());
-            for (Frequency freq : manager.getFrequencies()) {
-                freq.write(data);
+            if (frequency != null) {
+                buf.writeBoolean(true);
+                frequency.write(buf);
+            } else {
+                buf.writeBoolean(false);
             }
-        } else {
-            data.add(0);
+
+            buf.writeInt(Mekanism.publicEntangloporters.getFrequencies().size());
+            for (Frequency freq : Mekanism.publicEntangloporters.getFrequencies()) {
+                freq.write(buf);
+            }
+
+            FrequencyManager manager = getManager(new InventoryFrequency(null, null).setPublic(false));
+            if (manager != null) {
+                buf.writeInt(manager.getFrequencies().size());
+                for (Frequency freq : manager.getFrequencies()) {
+                    freq.write(buf);
+                }
+            } else {
+                buf.writeInt(0);
+            }
         }
-        return data;
     }
 
     @Override
@@ -377,7 +367,7 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
 
     @Override
     public boolean canFill(EnumFacing from, @Nonnull FluidStack fluid) {
-        if (hasFrequency() && configComponent.getOutput(TransmissionType.FLUID, from, facing).ioState == IOState.INPUT) {
+        if (hasFrequency() && configComponent.getOutput(TransmissionType.FLUID, from, facing).ioState == SideData.IOState.INPUT) {
             return FluidContainerUtils.canFill(frequency.storedFluid.getFluid(), fluid);
         }
         return false;
@@ -385,7 +375,7 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
 
     @Override
     public boolean canDrain(EnumFacing from, @Nullable FluidStack fluid) {
-        if (hasFrequency() && configComponent.getOutput(TransmissionType.FLUID, from, facing).ioState == IOState.OUTPUT) {
+        if (hasFrequency() && configComponent.getOutput(TransmissionType.FLUID, from, facing).ioState == SideData.IOState.OUTPUT) {
             return FluidContainerUtils.canDrain(frequency.storedFluid.getFluid(), fluid);
         }
         return false;
@@ -394,7 +384,7 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
     @Override
     public FluidTankInfo[] getTankInfo(EnumFacing from) {
         if (hasFrequency()) {
-            if (configComponent.getOutput(TransmissionType.FLUID, from, facing).ioState != IOState.OFF) {
+            if (configComponent.getOutput(TransmissionType.FLUID, from, facing).ioState != SideData.IOState.OFF) {
                 return new FluidTankInfo[]{frequency.storedFluid.getInfo()};
             }
         }
@@ -418,7 +408,7 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
 
     @Override
     public boolean canReceiveGas(EnumFacing side, Gas type) {
-        if (hasFrequency() && configComponent.getOutput(TransmissionType.GAS, side, facing).ioState == IOState.INPUT) {
+        if (hasFrequency() && configComponent.getOutput(TransmissionType.GAS, side, facing).ioState == SideData.IOState.INPUT) {
             return frequency.storedGas.getGasType() == null || type == frequency.storedGas.getGasType();
         }
         return false;
@@ -426,7 +416,7 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
 
     @Override
     public boolean canDrawGas(EnumFacing side, Gas type) {
-        if (hasFrequency() && configComponent.getOutput(TransmissionType.GAS, side, facing).ioState == IOState.OUTPUT) {
+        if (hasFrequency() && configComponent.getOutput(TransmissionType.GAS, side, facing).ioState == SideData.IOState.OUTPUT) {
             return frequency.storedGas.getGasType() == null || type == frequency.storedGas.getGasType();
         }
         return false;
@@ -484,13 +474,13 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
 
     @Override
     public boolean canConnectHeat(EnumFacing side) {
-        return hasFrequency() && configComponent.getOutput(TransmissionType.HEAT, side, facing).ioState != IOState.OFF;
+        return hasFrequency() && configComponent.getOutput(TransmissionType.HEAT, side, facing).ioState != SideData.IOState.OFF;
     }
 
     @Override
     public IHeatTransfer getAdjacent(EnumFacing side) {
         TileEntity adj = Coord4D.get(this).offset(side).getTileEntity(world);
-        if (hasFrequency() && configComponent.getOutput(TransmissionType.HEAT, side, facing).ioState == IOState.INPUT) {
+        if (hasFrequency() && configComponent.getOutput(TransmissionType.HEAT, side, facing).ioState == SideData.IOState.INPUT) {
             if (CapabilityUtils.hasCapability(adj, Capabilities.HEAT_TRANSFER_CAPABILITY, side.getOpposite())) {
                 return CapabilityUtils.getCapability(adj, Capabilities.HEAT_TRANSFER_CAPABILITY, side.getOpposite());
             }
@@ -500,13 +490,13 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
 
     @Override
     public boolean canInsertItem(int slotID, @Nonnull ItemStack itemstack, @Nonnull EnumFacing side) {
-        return hasFrequency() && configComponent.getOutput(TransmissionType.ITEM, side, facing).ioState == IOState.INPUT;
+        return hasFrequency() && configComponent.getOutput(TransmissionType.ITEM, side, facing).ioState == SideData.IOState.INPUT;
     }
 
     @Nonnull
     @Override
     public int[] getSlotsForFace(@Nonnull EnumFacing side) {
-        if (hasFrequency() && configComponent.getOutput(TransmissionType.ITEM, side, facing).ioState != IOState.OFF) {
+        if (hasFrequency() && configComponent.getOutput(TransmissionType.ITEM, side, facing).ioState != SideData.IOState.OFF) {
             return new int[]{0};
         }
         return InventoryUtils.EMPTY;
@@ -514,7 +504,7 @@ public class TileEntityQuantumEntangloporter extends TileEntityElectricBlock imp
 
     @Override
     public boolean canExtractItem(int slotID, @Nonnull ItemStack itemstack, @Nonnull EnumFacing side) {
-        return hasFrequency() && configComponent.getOutput(TransmissionType.ITEM, side, facing).ioState == IOState.OUTPUT;
+        return hasFrequency() && configComponent.getOutput(TransmissionType.ITEM, side, facing).ioState == SideData.IOState.OUTPUT;
     }
 
     @Override

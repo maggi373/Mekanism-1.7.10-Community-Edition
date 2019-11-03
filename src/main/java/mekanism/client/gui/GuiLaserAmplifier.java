@@ -10,7 +10,9 @@ import mekanism.client.gui.element.tab.GuiAmplifierTab;
 import mekanism.client.gui.element.tab.GuiSecurityTab;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.inventory.container.ContainerLaserAmplifier;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.TileEntityLaserAmplifier;
 import mekanism.common.util.LangUtils;
@@ -137,8 +139,7 @@ public class GuiLaserAmplifier extends GuiMekanismTile<TileEntityLaserAmplifier>
                 minField.setText("");
                 return;
             }
-            TileNetworkList data = TileNetworkList.withContents(0, toUse);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 0, toUse));
             minField.setText("");
         }
     }
@@ -152,8 +153,7 @@ public class GuiLaserAmplifier extends GuiMekanismTile<TileEntityLaserAmplifier>
                 maxField.setText("");
                 return;
             }
-            TileNetworkList data = TileNetworkList.withContents(1, toUse);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 1, toUse));
             maxField.setText("");
         }
     }
@@ -161,8 +161,7 @@ public class GuiLaserAmplifier extends GuiMekanismTile<TileEntityLaserAmplifier>
     private void setTime() {
         if (!timerField.getText().isEmpty()) {
             int toUse = Math.max(0, Integer.parseInt(timerField.getText()));
-            TileNetworkList data = TileNetworkList.withContents(2, toUse);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 2, toUse));
             timerField.setText("");
         }
     }

@@ -12,6 +12,9 @@ import mekanism.api.TileNetworkList;
  * WARNING: DO NOT USE ANYMORE
  * WARNING: DO NOT USE ANYMORE
  * WARNING: DO NOT USE ANYMORE
+ *
+ * Use {@link ITileByteBuf} or {@link INetworkNBT} instead
+ *
  * @author AidanBrady
  */
 @Deprecated

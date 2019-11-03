@@ -1,21 +1,10 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import mekanism.api.Coord4D;
 import mekanism.api.IConfigurable;
-import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
-import mekanism.common.base.FluidHandlerWrapper;
-import mekanism.common.base.IActiveState;
-import mekanism.common.base.IComparatorSupport;
-import mekanism.common.base.IFluidContainerManager;
-import mekanism.common.base.IFluidHandlerWrapper;
-import mekanism.common.base.ISustainedTank;
-import mekanism.common.base.ITankManager;
-import mekanism.common.base.ITierUpgradeable;
-import mekanism.common.base.ITieredTile;
+import mekanism.common.base.*;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.security.ISecurityTile;
@@ -23,14 +12,8 @@ import mekanism.common.tier.BaseTier;
 import mekanism.common.tier.FluidTankTier;
 import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
-import mekanism.common.util.CapabilityUtils;
-import mekanism.common.util.FluidContainerUtils;
+import mekanism.common.util.*;
 import mekanism.common.util.FluidContainerUtils.ContainerEditMode;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.LangUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.PipeUtils;
-import mekanism.common.util.TileUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
@@ -46,8 +29,10 @@ import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class TileEntityFluidTank extends TileEntityContainerBlock implements IActiveState, IConfigurable, IFluidHandlerWrapper, ISustainedTank, IFluidContainerManager,
       ITankManager, ISecurityTile, ITierUpgradeable, ITieredTile, IComparatorSupport {
@@ -259,28 +244,43 @@ public class TileEntityFluidTank extends TileEntityContainerBlock implements IAc
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
             FluidTankTier prevTier = tier;
-            tier = FluidTankTier.values()[dataStream.readInt()];
+            tier = FluidTankTier.values()[buf.readInt()];
             fluidTank.setCapacity(tier.getStorage());
 
-            clientActive = dataStream.readBoolean();
-            valve = dataStream.readInt();
-            editMode = ContainerEditMode.values()[dataStream.readInt()];
+            clientActive = buf.readBoolean();
+            valve = buf.readInt();
+            editMode = ContainerEditMode.values()[buf.readInt()];
             if (valve > 0) {
-                valveFluid = TileUtils.readFluidStack(dataStream);
+                valveFluid = TileUtils.readFluidStack(buf);
             } else {
                 valveFluid = null;
             }
 
-            TileUtils.readTankData(dataStream, fluidTank);
+            TileUtils.readTankData(buf, fluidTank);
             if (prevTier != tier || (updateDelay == 0 && clientActive != isActive)) {
                 updateDelay = MekanismConfig.current().general.UPDATE_DELAY.val();
                 isActive = clientActive;
                 MekanismUtils.updateBlock(world, getPos());
             }
+        }
+    }
+
+    @Override
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(tier.ordinal());
+            buf.writeBoolean(isActive);
+            buf.writeInt(valve);
+            buf.writeInt(editMode.ordinal());
+            if (valve > 0) {
+                TileUtils.addFluidStack(buf, valveFluid);
+            }
+            TileUtils.addTankData(buf, fluidTank);
         }
     }
 
@@ -306,20 +306,6 @@ public class TileEntityFluidTank extends TileEntityContainerBlock implements IAc
             needed += topTank.getCurrentNeeded();
         }
         return needed;
-    }
-
-    @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(tier.ordinal());
-        data.add(isActive);
-        data.add(valve);
-        data.add(editMode.ordinal());
-        if (valve > 0) {
-            TileUtils.addFluidStack(data, valveFluid);
-        }
-        TileUtils.addTankData(data, fluidTank);
-        return data;
     }
 
     @Override

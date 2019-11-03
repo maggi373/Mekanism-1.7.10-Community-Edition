@@ -9,6 +9,7 @@ import mekanism.api.gas.GasTank;
 import mekanism.api.gas.GasTankInfo;
 import mekanism.api.gas.IGasHandler;
 import mekanism.api.gas.IGasItem;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.handler.FuelHandler;
 import mekanism.common.handler.FuelHandler.FuelGas;
 import mekanism.common.base.IComparatorSupport;
@@ -197,25 +198,25 @@ public class TileEntityGasGenerator extends TileEntityGenerator implements IGasH
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            TileUtils.readTankData(dataStream, fuelTank);
-            generationRate = dataStream.readDouble();
-            output = dataStream.readDouble();
-            clientUsed = dataStream.readInt();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            TileUtils.readTankData(buf, fuelTank);
+            generationRate = buf.readDouble();
+            output = buf.readDouble();
+            clientUsed = buf.readInt();
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        TileUtils.addTankData(data, fuelTank);
-        data.add(generationRate);
-        data.add(output);
-        data.add(clientUsed);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            TileUtils.addTankData(buf, fuelTank);
+            buf.writeDouble(generationRate);
+            buf.writeDouble(output);
+            buf.writeInt(clientUsed);
+        }
     }
 
     @Override

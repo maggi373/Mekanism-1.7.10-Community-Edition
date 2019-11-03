@@ -11,6 +11,7 @@ import mekanism.client.gui.filter.GuiMMaterialFilter;
 import mekanism.client.gui.filter.GuiMModIDFilter;
 import mekanism.client.gui.filter.GuiMOreDictFilter;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.handler.PacketHandler;
 import mekanism.common.inventory.container.ContainerDigitalMiner;
 import mekanism.common.inventory.container.ContainerFilter;
@@ -102,16 +103,14 @@ public class PacketDigitalMinerGui implements IMessageHandler<DigitalMinerGuiMes
             playerMP.closeContainer();
             switch (guiType) {
                 case 0:
+                case 5:
                     container = new ContainerNull(playerMP, (TileEntityContainerBlock) obj.getTileEntity(world));
                     break;
                 case 4:
                     container = new ContainerDigitalMiner(playerMP.inventory,
                           (TileEntityDigitalMiner) obj.getTileEntity(world));
                     break;
-                case 5:
-                    container = new ContainerNull(playerMP, (TileEntityContainerBlock) obj.getTileEntity(world));
-                    break;
-//				case 1:
+                //				case 1:
 //				case 2:
 //				case 3:
 //				case 6:
@@ -133,7 +132,7 @@ public class PacketDigitalMinerGui implements IMessageHandler<DigitalMinerGuiMes
             if (guiType == 0) {
                 TileEntityDigitalMiner tile = (TileEntityDigitalMiner) obj.getTileEntity(world);
                 for (EntityPlayer player : tile.playersUsing) {
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(obj, tile.getFilterPacket(new TileNetworkList())), (EntityPlayerMP) player);
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(tile, ByteBufType.SERVER_TO_CLIENT, 2), (EntityPlayerMP) player);
                 }
             }
         }

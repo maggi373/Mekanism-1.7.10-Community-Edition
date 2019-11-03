@@ -16,10 +16,12 @@ import mekanism.client.gui.element.tab.GuiUpgradeTab;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IFactory.MachineFuelType;
 import mekanism.common.base.IFactory.RecipeType;
 import mekanism.common.inventory.container.ContainerFactory;
 import mekanism.common.item.ItemGaugeDropper;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tier.FactoryTier;
 import mekanism.common.tile.TileEntityFactory;
@@ -122,8 +124,9 @@ public class GuiFactory extends GuiMekanismTile<TileEntityFactory> {
             if (xAxis > 8 && xAxis < 168 && yAxis > 78 && yAxis < 83) {
                 ItemStack stack = mc.player.inventory.getItemStack();
                 if (!stack.isEmpty() && stack.getItem() instanceof ItemGaugeDropper) {
-                    TileNetworkList data = TileNetworkList.withContents(1);
-                    Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+                    //TileNetworkList data = TileNetworkList.withContents(1);
+                    //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+                    Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 1));
                     SoundHandler.playSound(SoundEvents.UI_BUTTON_CLICK);
                 }
             }

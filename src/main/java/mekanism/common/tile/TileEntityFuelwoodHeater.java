@@ -6,6 +6,7 @@ import mekanism.api.Coord4D;
 import mekanism.api.IHeatTransfer;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IActiveState;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
@@ -122,14 +123,14 @@ public class TileEntityFuelwoodHeater extends TileEntityContainerBlock implement
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            temperature = dataStream.readDouble();
-            clientActive = dataStream.readBoolean();
-            burnTime = dataStream.readInt();
-            maxBurnTime = dataStream.readInt();
-            lastEnvironmentLoss = dataStream.readDouble();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            temperature = buf.readDouble();
+            clientActive = buf.readBoolean();
+            burnTime = buf.readInt();
+            maxBurnTime = buf.readInt();
+            lastEnvironmentLoss = buf.readDouble();
             if (updateDelay == 0 && clientActive != isActive) {
                 updateDelay = MekanismConfig.current().general.UPDATE_DELAY.val();
                 isActive = clientActive;
@@ -139,14 +140,15 @@ public class TileEntityFuelwoodHeater extends TileEntityContainerBlock implement
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(temperature);
-        data.add(isActive);
-        data.add(burnTime);
-        data.add(maxBurnTime);
-        data.add(lastEnvironmentLoss);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeDouble(temperature);
+            buf.writeBoolean(isActive);
+            buf.writeInt(burnTime);
+            buf.writeInt(maxBurnTime);
+            buf.writeDouble(lastEnvironmentLoss);
+        }
     }
 
     @Override

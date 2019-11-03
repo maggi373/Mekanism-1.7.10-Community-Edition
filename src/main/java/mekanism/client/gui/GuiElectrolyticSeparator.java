@@ -19,7 +19,9 @@ import mekanism.client.gui.element.tab.GuiSecurityTab;
 import mekanism.client.gui.element.tab.GuiUpgradeTab;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.inventory.container.ContainerElectrolyticSeparator;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.TileEntityElectrolyticSeparator;
 import mekanism.common.tile.TileEntityGasTank.GasMode;
@@ -68,12 +70,14 @@ public class GuiElectrolyticSeparator extends GuiMekanismTile<TileEntityElectrol
         int xAxis = x - guiLeft;
         int yAxis = y - guiTop;
         if (xAxis > 8 && xAxis < 17 && yAxis > 73 && yAxis < 82) {
-            TileNetworkList data = TileNetworkList.withContents((byte) 0);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            //TileNetworkList data = TileNetworkList.withContents((byte) 0);
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, (byte) 0));
+            //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
             SoundHandler.playSound(SoundEvents.UI_BUTTON_CLICK);
         } else if (xAxis > 160 && xAxis < 169 && yAxis > 73 && yAxis < 82) {
-            TileNetworkList data = TileNetworkList.withContents((byte) 1);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            //TileNetworkList data = TileNetworkList.withContents((byte) 1);
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, (byte) 1));
+            //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
             SoundHandler.playSound(SoundEvents.UI_BUTTON_CLICK);
         }
     }

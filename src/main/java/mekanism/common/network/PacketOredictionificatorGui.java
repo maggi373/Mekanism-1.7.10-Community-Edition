@@ -6,6 +6,7 @@ import mekanism.api.TileNetworkList;
 import mekanism.client.gui.GuiOredictionificator;
 import mekanism.client.gui.filter.GuiOredictionificatorFilter;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.handler.PacketHandler;
 import mekanism.common.inventory.container.ContainerFilter;
 import mekanism.common.inventory.container.ContainerOredictionificator;
@@ -117,7 +118,7 @@ public class PacketOredictionificatorGui implements IMessageHandler<Oredictionif
             if (guiType == 0) {
                 TileEntityOredictionificator tile = (TileEntityOredictionificator) obj.getTileEntity(world);
                 for (EntityPlayer player : tile.playersUsing) {
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(obj, tile.getFilterPacket(new TileNetworkList())), (EntityPlayerMP) player);
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(tile, ByteBufType.SERVER_TO_CLIENT, 2), (EntityPlayerMP) player);
                 }
             }
         }

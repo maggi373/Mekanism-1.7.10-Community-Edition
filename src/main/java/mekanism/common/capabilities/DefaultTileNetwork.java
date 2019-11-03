@@ -6,6 +6,7 @@ import mekanism.common.base.ITileNetwork;
 import mekanism.common.capabilities.DefaultStorageHelper.NullStorage;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 
+@Deprecated
 public class DefaultTileNetwork implements ITileNetwork {
 
     public static void register() {

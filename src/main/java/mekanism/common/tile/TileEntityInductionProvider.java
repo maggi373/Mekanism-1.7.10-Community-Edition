@@ -3,6 +3,7 @@ package mekanism.common.tile;
 import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 import mekanism.api.TileNetworkList;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.tier.InductionProviderTier;
 import mekanism.common.tile.prefab.TileEntityBasicBlock;
 import mekanism.common.util.LangUtils;
@@ -23,11 +24,11 @@ public class TileEntityInductionProvider extends TileEntityBasicBlock {
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
             InductionProviderTier prevTier = tier;
-            tier = InductionProviderTier.values()[dataStream.readInt()];
+            tier = InductionProviderTier.values()[buf.readInt()];
             if (prevTier != tier) {
                 MekanismUtils.updateBlock(world, getPos());
             }
@@ -35,10 +36,11 @@ public class TileEntityInductionProvider extends TileEntityBasicBlock {
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(tier.ordinal());
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(tier.ordinal());
+        }
     }
 
     @Override

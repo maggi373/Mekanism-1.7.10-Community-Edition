@@ -1,33 +1,15 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.List;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import mekanism.api.TileNetworkList;
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasRegistry;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTank;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
-import mekanism.api.gas.IGasItem;
+import mekanism.api.gas.*;
 import mekanism.common.Mekanism;
-import mekanism.common.Upgrade;
-import mekanism.common.Upgrade.IUpgradeInfoHandler;
 import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.misc.Upgrade;
 import mekanism.common.network.PacketByteBuf;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.prefab.TileEntityMachine;
-import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.FluidContainerUtils;
-import mekanism.common.util.ItemDataUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.PipeUtils;
-import mekanism.common.util.TileUtils;
+import mekanism.common.util.*;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
@@ -40,7 +22,10 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.List;
 
 public class TileEntityRotaryCondensentrator extends TileEntityMachine implements ISustainedData, IFluidHandlerWrapper, IGasHandler, Upgrade.IUpgradeInfoHandler, ITankManager,
       IComparatorSupport {
@@ -154,36 +139,39 @@ public class TileEntityRotaryCondensentrator extends TileEntityMachine implement
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int type1 = buf.readInt();
+            if (type1 == 0) {
                 mode = mode == 0 ? 1 : 0;
             }
             for (EntityPlayer player : playersUsing) {
                 Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT), (EntityPlayerMP) player);
             }
-
             return;
         }
-
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            mode = dataStream.readInt();
-            clientEnergyUsed = dataStream.readDouble();
-            TileUtils.readTankData(dataStream, fluidTank);
-            TileUtils.readTankData(dataStream, gasTank);
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            mode = buf.readInt();
+            clientEnergyUsed = buf.readDouble();
+            TileUtils.readTankData(buf, fluidTank);
+            TileUtils.readTankData(buf, gasTank);
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(mode);
-        data.add(clientEnergyUsed);
-        TileUtils.addTankData(data, fluidTank);
-        TileUtils.addTankData(data, gasTank);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(mode);
+            buf.writeDouble(clientEnergyUsed);
+            TileUtils.addTankData(buf, fluidTank);
+            TileUtils.addTankData(buf, gasTank);
+        }
     }
 
     @Override

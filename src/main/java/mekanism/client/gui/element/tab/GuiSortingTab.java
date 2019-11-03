@@ -6,6 +6,8 @@ import mekanism.client.gui.element.GuiTileEntityElement;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.TileEntityFactory;
 import mekanism.common.util.LangUtils;
@@ -59,8 +61,7 @@ public class GuiSortingTab extends GuiTileEntityElement<TileEntityFactory> {
     @Override
     public void mouseClicked(int xAxis, int yAxis, int button) {
         if (button == 0 && inBounds(xAxis, yAxis)) {
-            TileNetworkList data = TileNetworkList.withContents(0);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 0));
             SoundHandler.playSound(SoundEvents.UI_BUTTON_CLICK);
         }
     }

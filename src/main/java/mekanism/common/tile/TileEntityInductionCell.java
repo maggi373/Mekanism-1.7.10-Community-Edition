@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 import mekanism.api.TileNetworkList;
 import mekanism.api.energy.IStrictEnergyStorage;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.tier.InductionCellTier;
 import mekanism.common.tile.prefab.TileEntityBasicBlock;
@@ -29,12 +30,12 @@ public class TileEntityInductionCell extends TileEntityBasicBlock implements ISt
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
             InductionCellTier prevTier = tier;
-            tier = InductionCellTier.values()[dataStream.readInt()];
-            super.handlePacketData(dataStream);
-            electricityStored = dataStream.readDouble();
+            tier = InductionCellTier.values()[buf.readInt()];
+            super.readPacket(buf, type);
+            electricityStored = buf.readDouble();
             if (prevTier != tier) {
                 MekanismUtils.updateBlock(world, getPos());
             }
@@ -42,11 +43,14 @@ public class TileEntityInductionCell extends TileEntityBasicBlock implements ISt
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        data.add(tier.ordinal());
-        super.getNetworkedData(data);
-        data.add(electricityStored);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(tier.ordinal());
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeDouble(electricityStored);
+        }
     }
 
     @Override

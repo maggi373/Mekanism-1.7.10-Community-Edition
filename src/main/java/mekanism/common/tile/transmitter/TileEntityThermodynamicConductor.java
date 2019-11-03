@@ -126,7 +126,7 @@ public class TileEntityThermodynamicConductor extends TileEntityTransmitter<IHea
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         buf.writeInt(tier.ordinal());
         super.writePacket(buf, type);
         buf.writeDouble(temperature);

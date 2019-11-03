@@ -1,27 +1,21 @@
 package mekanism.client.gui;
 
-import java.io.IOException;
-import javax.annotation.Nullable;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
 import mekanism.client.gui.button.GuiButtonDisableableImage;
 import mekanism.client.gui.button.GuiColorButton;
 import mekanism.client.gui.element.GuiRedstoneControl;
 import mekanism.client.gui.element.tab.GuiSecurityTab;
 import mekanism.client.gui.element.tab.GuiUpgradeTab;
 import mekanism.client.sound.SoundHandler;
-import mekanism.common.misc.HashList;
 import mekanism.common.Mekanism;
-import mekanism.common.content.filter.IFilter;
-import mekanism.common.content.filter.IItemStackFilter;
-import mekanism.common.content.filter.IMaterialFilter;
-import mekanism.common.content.filter.IModIDFilter;
-import mekanism.common.content.filter.IOreDictFilter;
+import mekanism.common.base.ByteBufType;
+import mekanism.common.content.filter.*;
 import mekanism.common.content.transporter.TransporterFilter;
 import mekanism.common.inventory.container.ContainerNull;
+import mekanism.common.misc.HashList;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketLogisticalSorterGui.LogisticalSorterGuiMessage;
 import mekanism.common.network.PacketLogisticalSorterGui.SorterGuiPacket;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.TileEntityLogisticalSorter;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;
@@ -35,6 +29,9 @@ import net.minecraft.util.SoundEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.input.Keyboard;
+
+import javax.annotation.Nullable;
+import java.io.IOException;
 
 @SideOnly(Side.CLIENT)
 public class GuiLogisticalSorter extends GuiFilterHolder<TileEntityLogisticalSorter, TransporterFilter> {
@@ -97,12 +94,12 @@ public class GuiLogisticalSorter extends GuiFilterHolder<TileEntityLogisticalSor
                         int arrowX = filterX + filterW - 12;
                         if (index > 0 && overUpArrow(xAxis, yAxis, arrowX, yStart)) {
                             //Process up button click
-                            sendDataFromClick(TileNetworkList.withContents(3, index));
+                            sendDataFromClick(3, index);
                             return;
                         }
                         if (index < tileEntity.filters.size() - 1 && overDownArrow(xAxis, yAxis, arrowX, yStart)) {
                             //Process down button click
-                            sendDataFromClick(TileNetworkList.withContents(4, index));
+                            sendDataFromClick(4, index);
                             return;
                         }
                         if (filter instanceof IItemStackFilter) {
@@ -121,7 +118,7 @@ public class GuiLogisticalSorter extends GuiFilterHolder<TileEntityLogisticalSor
 
         // Check for default colour button
         if (colorButton.isMouseOver() && mouseBtn == 1) {
-            sendDataFromClick(TileNetworkList.withContents(0, 1));
+            sendDataFromClick(0, 1);
         }
     }
 
@@ -155,13 +152,17 @@ public class GuiLogisticalSorter extends GuiFilterHolder<TileEntityLogisticalSor
         if (guibutton.id == BUTTON_NEW) {
             sendPacket(SorterGuiPacket.SERVER, 4, 0, null);
         } else if (guibutton.id == singleItemButton.id) {
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(5)));
+            //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(5)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 5, 0));
         } else if (guibutton.id == roundRobinButton.id) {
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(2)));
+            //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(2)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 2, 0));
         } else if (guibutton.id == autoEjectButton.id) {
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(1)));
+            //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(1)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 1, 0));
         } else if (guibutton.id == colorButton.id) {
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(0, Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) ? 2 : 0)));
+            //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(0, Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) ? 2 : 0)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 0, Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) ? 2 : 0));
         }
     }
 

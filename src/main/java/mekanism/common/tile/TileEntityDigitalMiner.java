@@ -1,30 +1,11 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
 import mekanism.api.Chunk3D;
 import mekanism.api.Coord4D;
 import mekanism.api.Range4D;
-import mekanism.api.TileNetworkList;
-import mekanism.common.HashList;
 import mekanism.common.Mekanism;
-import mekanism.common.Upgrade;
-import mekanism.common.base.IActiveState;
-import mekanism.common.base.IAdvancedBoundingBlock;
-import mekanism.common.base.ILogisticalTransporter;
-import mekanism.common.base.IRedstoneControl;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.IUpgradeTile;
+import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.chunkloading.IChunkLoader;
@@ -41,19 +22,12 @@ import mekanism.common.inventory.container.ContainerFilter;
 import mekanism.common.inventory.container.ContainerNull;
 import mekanism.common.misc.HashList;
 import mekanism.common.misc.Upgrade;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.tile.component.TileComponentChunkLoader;
 import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.tile.prefab.TileEntityElectricBlock;
-import mekanism.common.util.CapabilityUtils;
-import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.ItemDataUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.MinerUtils;
-import mekanism.common.util.StackUtils;
-import mekanism.common.util.TransporterUtils;
+import mekanism.common.util.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockBush;
 import net.minecraft.block.state.BlockFaceShape;
@@ -79,11 +53,15 @@ import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.common.util.Constants.WorldEvents;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.event.world.BlockEvent;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
+
+import javax.annotation.Nonnull;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class TileEntityDigitalMiner extends TileEntityElectricBlock implements IUpgradeTile, IRedstoneControl, IActiveState, ISustainedData, IChunkLoader, IAdvancedBoundingBlock {
 
@@ -282,7 +260,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
 
             if (playersUsing.size() > 0) {
                 for (EntityPlayer player : playersUsing) {
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getSmallPacket(new TileNetworkList())), (EntityPlayerMP) player);
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT, 3), (EntityPlayerMP) player);
                 }
             }
             prevEnergy = getEnergy();
@@ -523,7 +501,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
     public void openInventory(@Nonnull EntityPlayer player) {
         super.openInventory(player);
         if (!world.isRemote) {
-            Mekanism.packetHandler.sendTo(new TileEntityMessage(this), (EntityPlayerMP) player);
+            Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT), (EntityPlayerMP) player);
         }
     }
 
@@ -555,6 +533,35 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         return getConfigurationData(nbtTags);
     }
 
+    private void addBasicData(ByteBuf buf) {
+        buf.writeInt(radius);
+        buf.writeInt(minY);
+        buf.writeInt(maxY);
+        buf.writeBoolean(doEject);
+        buf.writeBoolean(doPull);
+        buf.writeBoolean(isActive);
+        buf.writeBoolean(running);
+        buf.writeBoolean(silkTouch);
+        buf.writeInt(numPowering);
+        buf.writeInt(searcher.state.ordinal());
+
+        if (searcher.state == State.SEARCHING) {
+            buf.writeInt(searcher.found);
+        } else {
+            buf.writeInt(getSize());
+        }
+
+        buf.writeInt(controlType.ordinal());
+        buf.writeBoolean(inverse);
+        if (!missingStack.isEmpty()) {
+            buf.writeBoolean(true);
+            buf.writeInt(MekanismUtils.getID(missingStack));
+            buf.writeInt(missingStack.getItemDamage());
+        } else {
+            buf.writeBoolean(false);
+        }
+    }
+
     private void readBasicData(ByteBuf dataStream) {
         setRadius(dataStream.readInt());//client allowed to use whatever server sends
         minY = dataStream.readInt();
@@ -577,10 +584,51 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            switch (type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            if(obj.length > 1) {
+                buf.writeInt((Integer) obj[1]);
+            }
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            int packetType = 0;
+            if(obj.length > 0) {
+                try {
+                    packetType = (int) obj[0];
+                } catch (Exception ignored) {
+
+                }
+            }
+            switch (packetType) {
+                case 0:
+                    buf.writeInt(0);
+                    addBasicData(buf);
+                    buf.writeInt(filters.size());
+                    for (MinerFilter filter : filters) {
+                        filter.write(buf);
+                    }
+                    break;
+                case 1:
+                    writeGenericPacket(buf);
+                    break;
+                case 2:
+                    writeFilterPacket(buf);
+                    break;
+                case 3:
+                    writeSmallPacket(buf);
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int type2 = buf.readInt();
+            switch (type2) {
                 case 0:
                     doEject = !doEject;
                     break;
@@ -597,13 +645,13 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
                     reset();
                     break;
                 case 6:
-                    setRadius(Math.min(dataStream.readInt(), MekanismConfig.current().general.digitalMinerMaxRadius.val()));
+                    setRadius(Math.min(buf.readInt(), MekanismConfig.current().general.digitalMinerMaxRadius.val()));
                     break;
                 case 7:
-                    minY = dataStream.readInt();
+                    minY = buf.readInt();
                     break;
                 case 8:
-                    maxY = dataStream.readInt();
+                    maxY = buf.readInt();
                     break;
                 case 9:
                     silkTouch = !silkTouch;
@@ -613,7 +661,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
                     break;
                 case 11: {
                     // Move filter up
-                    int filterIndex = dataStream.readInt();
+                    int filterIndex = buf.readInt();
                     filters.swap(filterIndex, filterIndex - 1);
                     for (EntityPlayer player : playersUsing) {
                         openInventory(player);
@@ -622,7 +670,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
                 }
                 case 12: {
                     // Move filter down
-                    int filterIndex = dataStream.readInt();
+                    int filterIndex = buf.readInt();
                     filters.swap(filterIndex, filterIndex + 1);
                     for (EntityPlayer player : playersUsing) {
                         openInventory(player);
@@ -633,36 +681,34 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
 
             MekanismUtils.saveChunk(this);
             for (EntityPlayer player : playersUsing) {
-                Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getGenericPacket(new TileNetworkList())), (EntityPlayerMP) player);
+                Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT, 1), (EntityPlayerMP) player);
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
-                readBasicData(dataStream);
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            int i1 = buf.readInt();
+            if (i1 == 0) {
+                readBasicData(buf);
                 filters.clear();
-                int amount = dataStream.readInt();
+                int amount = buf.readInt();
                 for (int i = 0; i < amount; i++) {
-                    filters.add(MinerFilter.readFromPacket(dataStream));
+                    filters.add(MinerFilter.readFromPacket(buf));
                 }
-            } else if (type == 1) {
-                readBasicData(dataStream);
-            } else if (type == 2) {
+            } else if (i1 == 1) {
+                readBasicData(buf);
+            } else if (i1 == 2) {
                 filters.clear();
-                int amount = dataStream.readInt();
+                int amount = buf.readInt();
                 for (int i = 0; i < amount; i++) {
-                    filters.add(MinerFilter.readFromPacket(dataStream));
+                    filters.add(MinerFilter.readFromPacket(buf));
                 }
-            } else if (type == 3) {
-                clientActive = dataStream.readBoolean();
-                running = dataStream.readBoolean();
-                clientToMine = dataStream.readInt();
-                if (dataStream.readBoolean()) {
-                    missingStack = new ItemStack(Item.getItemById(dataStream.readInt()), 1, dataStream.readInt());
+            } else if (i1 == 3) {
+                clientActive = buf.readBoolean();
+                running = buf.readBoolean();
+                clientToMine = buf.readInt();
+                if (buf.readBoolean()) {
+                    missingStack = new ItemStack(Item.getItemById(buf.readInt()), 1, buf.readInt());
                 } else {
                     missingStack = ItemStack.EMPTY;
                 }
@@ -674,85 +720,37 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
         }
     }
 
-    private void addBasicData(TileNetworkList data) {
-        data.add(radius);
-        data.add(minY);
-        data.add(maxY);
-        data.add(doEject);
-        data.add(doPull);
-        data.add(isActive);
-        data.add(running);
-        data.add(silkTouch);
-        data.add(numPowering);
-        data.add(searcher.state.ordinal());
+    public void writeGenericPacket(ByteBuf buf) {
+        buf.writeInt(1);
+        addBasicData(buf);
+    }
+
+    public void writeFilterPacket(ByteBuf buf) {
+        buf.writeInt(2);
+        buf.writeInt(filters.size());
+        for (MinerFilter filter : filters) {
+            filter.write(buf);
+        }
+    }
+
+    public void writeSmallPacket(ByteBuf buf) {
+        buf.writeInt(3);
+
+        buf.writeBoolean(isActive);
+        buf.writeBoolean(running);
 
         if (searcher.state == State.SEARCHING) {
-            data.add(searcher.found);
+            buf.writeInt(searcher.found);
         } else {
-            data.add(getSize());
-        }
-
-        data.add(controlType.ordinal());
-        data.add(inverse);
-        if (!missingStack.isEmpty()) {
-            data.add(true);
-            data.add(MekanismUtils.getID(missingStack));
-            data.add(missingStack.getItemDamage());
-        } else {
-            data.add(false);
-        }
-    }
-
-    @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(0);
-        addBasicData(data);
-        data.add(filters.size());
-        for (MinerFilter filter : filters) {
-            filter.write(data);
-        }
-        return data;
-    }
-
-    public TileNetworkList getSmallPacket(TileNetworkList data) {
-        super.getNetworkedData(data);
-
-        data.add(3);
-
-        data.add(isActive);
-        data.add(running);
-
-        if (searcher.state == State.SEARCHING) {
-            data.add(searcher.found);
-        } else {
-            data.add(getSize());
+            buf.writeInt(getSize());
         }
         if (!missingStack.isEmpty()) {
-            data.add(true);
-            data.add(MekanismUtils.getID(missingStack));
-            data.add(missingStack.getItemDamage());
+            buf.writeBoolean(true);
+            buf.writeInt(MekanismUtils.getID(missingStack));
+            buf.writeInt(missingStack.getItemDamage());
         } else {
-            data.add(false);
+            buf.writeBoolean(false);
         }
-        return data;
-    }
-
-    public TileNetworkList getGenericPacket(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(1);
-        addBasicData(data);
-        return data;
-    }
-
-    public TileNetworkList getFilterPacket(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(2);
-        data.add(filters.size());
-        for (MinerFilter filter : filters) {
-            filter.write(data);
-        }
-        return data;
     }
 
     public int getTotalSize() {
@@ -1007,7 +1005,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
             return new Object[]{searcher != null ? searcher.found : 0};
         }
         for (EntityPlayer player : playersUsing) {
-            Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getGenericPacket(new TileNetworkList())), (EntityPlayerMP) player);
+            Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT, 1), (EntityPlayerMP) player);
         }
         return null;
     }

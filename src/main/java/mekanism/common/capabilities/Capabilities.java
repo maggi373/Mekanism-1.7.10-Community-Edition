@@ -73,8 +73,9 @@ public class Capabilities {
     @CapabilityInject(ILaserReceptor.class)
     public static Capability<ILaserReceptor> LASER_RECEPTOR_CAPABILITY = null;
 
-    /*@CapabilityInject(ITileNetwork.class)
-    public static Capability<ITileNetwork> TILE_NETWORK_CAPABILITY = null;*/
+    @Deprecated
+    @CapabilityInject(ITileNetwork.class)
+    public static Capability<ITileNetwork> TILE_NETWORK_CAPABILITY = null;
 
     @CapabilityInject(ITileByteBuf.class)
     public static Capability<ITileByteBuf> TILE_BYTE_BUF = null;

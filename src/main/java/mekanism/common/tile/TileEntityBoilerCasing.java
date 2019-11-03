@@ -8,6 +8,7 @@ import mekanism.api.Coord4D;
 import mekanism.api.IHeatTransfer;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.content.boiler.BoilerCache;
 import mekanism.common.content.boiler.BoilerUpdateProtocol;
@@ -171,39 +172,79 @@ public class TileEntityBoilerCasing extends TileEntityMultiblock<SynchronizedBoi
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            if (structure != null) {
+                buf.writeInt(structure.waterVolume * BoilerUpdateProtocol.WATER_PER_TANK);
+                buf.writeInt(structure.steamVolume * BoilerUpdateProtocol.STEAM_PER_TANK);
+                buf.writeDouble(structure.lastEnvironmentLoss);
+                buf.writeInt(structure.lastBoilRate);
+                buf.writeInt(structure.superheatingElements);
+                buf.writeDouble(structure.temperature);
+                buf.writeInt(structure.lastMaxBoil);
 
-        if (structure != null) {
-            data.add(structure.waterVolume * BoilerUpdateProtocol.WATER_PER_TANK);
-            data.add(structure.steamVolume * BoilerUpdateProtocol.STEAM_PER_TANK);
-            data.add(structure.lastEnvironmentLoss);
-            data.add(structure.lastBoilRate);
-            data.add(structure.superheatingElements);
-            data.add(structure.temperature);
-            data.add(structure.lastMaxBoil);
+                TileUtils.addFluidStack(buf, structure.waterStored);
+                TileUtils.addFluidStack(buf, structure.steamStored);
 
-            TileUtils.addFluidStack(data, structure.waterStored);
-            TileUtils.addFluidStack(data, structure.steamStored);
+                structure.upperRenderLocation.write(buf);
 
-            structure.upperRenderLocation.write(data);
-
-            if (isRendering) {
-                data.add(structure.clientHot);
-                Set<ValveData> toSend = new HashSet<>();
-                for (ValveData valveData : structure.valves) {
-                    if (valveData.activeTicks > 0) {
-                        toSend.add(valveData);
+                if (isRendering) {
+                    buf.writeBoolean(structure.clientHot);
+                    Set<ValveData> toSend = new HashSet<>();
+                    for (ValveData valveData : structure.valves) {
+                        if (valveData.activeTicks > 0) {
+                            toSend.add(valveData);
+                        }
                     }
-                }
-                data.add(toSend.size());
-                for (ValveData valveData : toSend) {
-                    valveData.location.write(data);
-                    data.add(valveData.side.ordinal());
+                    buf.writeInt(toSend.size());
+                    for (ValveData valveData : toSend) {
+                        valveData.location.write(buf);
+                        buf.writeInt(valveData.side.ordinal());
+                    }
                 }
             }
         }
-        return data;
+    }
+
+    @Override
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            if (clientHasStructure) {
+                clientWaterCapacity = buf.readInt();
+                clientSteamCapacity = buf.readInt();
+                structure.lastEnvironmentLoss = buf.readDouble();
+                structure.lastBoilRate = buf.readInt();
+                structure.superheatingElements = buf.readInt();
+                structure.temperature = buf.readDouble();
+                structure.lastMaxBoil = buf.readInt();
+
+                structure.waterStored = TileUtils.readFluidStack(buf);
+                structure.steamStored = TileUtils.readFluidStack(buf);
+
+                structure.upperRenderLocation = Coord4D.read(buf);
+
+                if (isRendering) {
+                    structure.clientHot = buf.readBoolean();
+                    SynchronizedBoilerData.clientHotMap.put(structure.inventoryID, structure.clientHot);
+                    int size = buf.readInt();
+                    valveViewing.clear();
+                    for (int i = 0; i < size; i++) {
+                        ValveData data = new ValveData();
+                        data.location = Coord4D.read(buf);
+                        data.side = EnumFacing.byIndex(buf.readInt());
+
+                        valveViewing.add(data);
+
+                        TileEntityBoilerCasing tileEntity = (TileEntityBoilerCasing) data.location.getTileEntity(world);
+                        if (tileEntity != null) {
+                            tileEntity.clientHasStructure = true;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public int getScaledWaterLevel(int i) {
@@ -238,47 +279,6 @@ public class TileEntityBoilerCasing extends TileEntityMultiblock<SynchronizedBoi
 
     public int getSuperheatingElements() {
         return structure != null ? structure.superheatingElements : 0;
-    }
-
-    @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            if (clientHasStructure) {
-                clientWaterCapacity = dataStream.readInt();
-                clientSteamCapacity = dataStream.readInt();
-                structure.lastEnvironmentLoss = dataStream.readDouble();
-                structure.lastBoilRate = dataStream.readInt();
-                structure.superheatingElements = dataStream.readInt();
-                structure.temperature = dataStream.readDouble();
-                structure.lastMaxBoil = dataStream.readInt();
-
-                structure.waterStored = TileUtils.readFluidStack(dataStream);
-                structure.steamStored = TileUtils.readFluidStack(dataStream);
-
-                structure.upperRenderLocation = Coord4D.read(dataStream);
-
-                if (isRendering) {
-                    structure.clientHot = dataStream.readBoolean();
-                    SynchronizedBoilerData.clientHotMap.put(structure.inventoryID, structure.clientHot);
-                    int size = dataStream.readInt();
-                    valveViewing.clear();
-                    for (int i = 0; i < size; i++) {
-                        ValveData data = new ValveData();
-                        data.location = Coord4D.read(dataStream);
-                        data.side = EnumFacing.byIndex(dataStream.readInt());
-
-                        valveViewing.add(data);
-
-                        TileEntityBoilerCasing tileEntity = (TileEntityBoilerCasing) data.location.getTileEntity(world);
-                        if (tileEntity != null) {
-                            tileEntity.clientHasStructure = true;
-                        }
-                    }
-                }
-            }
-        }
     }
 
     @Override

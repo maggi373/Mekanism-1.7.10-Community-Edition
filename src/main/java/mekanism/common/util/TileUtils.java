@@ -22,41 +22,13 @@ public class TileUtils {
     // empty tag.
     private static final NBTTagCompound EMPTY_TAG_COMPOUND = new NBTTagCompound();
 
-    @Deprecated
-    public static void addTankData(TileNetworkList data, GasTank tank) {
-        if (tank.getGas() != null) {
-            data.add(tank.getGas().write(new NBTTagCompound()));
-        } else {
-            data.add(EMPTY_TAG_COMPOUND);
-        }
-    }
+    /** ByteBuf **/
 
     public static void addTankData(ByteBuf buf, GasTank tank) {
         if (tank.getGas() != null) {
             ByteBufUtils.writeTag(buf, tank.getGas().write(new NBTTagCompound()));
         } else {
             ByteBufUtils.writeTag(buf, EMPTY_TAG_COMPOUND);
-        }
-    }
-
-    @Deprecated
-    public static void addTankData(NBTTagCompound tag, GasTank tank) {
-        if (tank.getGas() != null) {
-            tank.getGas().write(tag);
-        }
-    }
-
-    @Deprecated
-    public static void addTankData(TileNetworkList data, FluidTank tank) {
-        addFluidStack(data, tank.getFluid());
-    }
-
-    @Deprecated
-    public static void addFluidStack(TileNetworkList data, FluidStack stack) {
-        if (stack != null) {
-            data.add(stack.writeToNBT(new NBTTagCompound()));
-        } else {
-            data.add(EMPTY_TAG_COMPOUND);
         }
     }
 
@@ -76,10 +48,6 @@ public class TileUtils {
         tank.setGas(GasStack.readFromNBT(PacketHandler.readNBT(dataStream)));
     }
 
-    /**
-     * Use in tile update
-     */
-
     public static void readTankData(ByteBuf dataStream, FluidTank tank) {
         tank.setFluid(readFluidStack(dataStream));
     }
@@ -88,7 +56,7 @@ public class TileUtils {
         return FluidStack.loadFluidStackFromNBT(PacketHandler.readNBT(dataStream));
     }
 
-
+    /** NBT Tag **/
 
     public static void addTankData(String id, NBTTagCompound tag, GasTank tank) {
         NBTTagCompound tag1 = new NBTTagCompound();

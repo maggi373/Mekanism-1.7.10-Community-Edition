@@ -1,22 +1,19 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.Arrays;
-import java.util.List;
-import javax.annotation.Nonnull;
 import mekanism.api.IConfigCardAccess.ISpecialConfigData;
 import mekanism.api.TileNetworkList;
-import mekanism.common.HashList;
 import mekanism.common.Mekanism;
-import mekanism.common.OreDictCache;
-import mekanism.common.PacketHandler;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.content.filter.IFilter;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.misc.HashList;
 import mekanism.common.misc.OreDictCache;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tile.component.TileComponentSecurity;
@@ -35,9 +32,14 @@ import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.oredict.OreDictionary;
+
+import javax.annotation.Nonnull;
+import java.util.Arrays;
+import java.util.List;
 
 public class TileEntityOredictionificator extends TileEntityContainerBlock implements IRedstoneControl, ISpecialConfigData, ISustainedData, ISecurityTile {
 
@@ -62,7 +64,7 @@ public class TileEntityOredictionificator extends TileEntityContainerBlock imple
         if (!world.isRemote) {
             if (playersUsing.size() > 0) {
                 for (EntityPlayer player : playersUsing) {
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getGenericPacket(new TileNetworkList())), (EntityPlayerMP) player);
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT, 1), (EntityPlayerMP) player);
                 }
             }
 
@@ -177,61 +179,76 @@ public class TileEntityOredictionificator extends TileEntityContainerBlock imple
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
-                controlType = RedstoneControl.values()[dataStream.readInt()];
-                didProcess = dataStream.readBoolean();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            int i1 = buf.readInt();
+            if (i1 == 0) {
+                controlType = RedstoneControl.values()[buf.readInt()];
+                didProcess = buf.readBoolean();
                 filters.clear();
 
-                int amount = dataStream.readInt();
+                int amount = buf.readInt();
                 for (int i = 0; i < amount; i++) {
-                    filters.add(OredictionificatorFilter.readFromPacket(dataStream));
+                    filters.add(OredictionificatorFilter.readFromPacket(buf));
                 }
-            } else if (type == 1) {
-                controlType = RedstoneControl.values()[dataStream.readInt()];
-                didProcess = dataStream.readBoolean();
-            } else if (type == 2) {
+            } else if (i1 == 1) {
+                controlType = RedstoneControl.values()[buf.readInt()];
+                didProcess = buf.readBoolean();
+            } else if (i1 == 2) {
                 filters.clear();
-                int amount = dataStream.readInt();
+                int amount = buf.readInt();
                 for (int i = 0; i < amount; i++) {
-                    filters.add(OredictionificatorFilter.readFromPacket(dataStream));
+                    filters.add(OredictionificatorFilter.readFromPacket(buf));
                 }
             }
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(0);
-        data.add(controlType.ordinal());
-        data.add(didProcess);
-        data.add(filters.size());
-        for (OredictionificatorFilter filter : filters) {
-            filter.write(data);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            int packetType = 0;
+            if(obj.length > 0) {
+                try {
+                    packetType = (int) obj[0];
+                } catch (final Exception ignored) {
+
+                }
+            }
+            switch (packetType) {
+                case 0:
+                    buf.writeInt(0);
+                    buf.writeInt(controlType.ordinal());
+                    buf.writeBoolean(didProcess);
+                    buf.writeInt(filters.size());
+                    for (OredictionificatorFilter filter : filters) {
+                        filter.write(buf);
+                    }
+                    break;
+                case 1:
+                    writeGenericPacket(buf);
+                    break;
+                case 2:
+                    writeFilterPacket(buf);
+                    break;
+            }
         }
-        return data;
     }
 
-    public TileNetworkList getGenericPacket(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(1);
-        data.add(controlType.ordinal());
-        data.add(didProcess);
-        return data;
+    public void writeGenericPacket(ByteBuf buf) {
+        buf.writeInt(1);
+        buf.writeInt(controlType.ordinal());
+        buf.writeBoolean(didProcess);
     }
 
-    public TileNetworkList getFilterPacket(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(2);
-        data.add(filters.size());
+    public void writeFilterPacket(ByteBuf buf) {
+        buf.writeInt(2);
+        buf.writeInt(filters.size());
         for (OredictionificatorFilter filter : filters) {
-            filter.write(data);
+            filter.write(buf);
         }
-        return data;
     }
 
     @Override
@@ -374,9 +391,9 @@ public class TileEntityOredictionificator extends TileEntityContainerBlock imple
             index = nbtTags.getInteger("index");
         }
 
-        public void write(TileNetworkList data) {
-            data.add(filter);
-            data.add(index);
+        public void write(ByteBuf buf) {
+            ByteBufUtils.writeUTF8String(buf, filter);
+            buf.writeInt(index);
         }
 
         protected void read(ByteBuf dataStream) {

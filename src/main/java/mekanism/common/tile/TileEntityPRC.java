@@ -6,10 +6,7 @@ import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
-import mekanism.common.base.FluidHandlerWrapper;
-import mekanism.common.base.IFluidHandlerWrapper;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.ITankManager;
+import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.item.ItemUpgrade;
@@ -159,21 +156,22 @@ public class TileEntityPRC extends TileEntityBasicMachine<PressurizedInput, Pres
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        TileUtils.addTankData(data, inputFluidTank);
-        TileUtils.addTankData(data, inputGasTank);
-        TileUtils.addTankData(data, outputGasTank);
-        return data;
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            TileUtils.readTankData(buf, inputFluidTank);
+            TileUtils.readTankData(buf, inputGasTank);
+            TileUtils.readTankData(buf, outputGasTank);
+        }
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            TileUtils.readTankData(dataStream, inputFluidTank);
-            TileUtils.readTankData(dataStream, inputGasTank);
-            TileUtils.readTankData(dataStream, outputGasTank);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            TileUtils.addTankData(buf, inputFluidTank);
+            TileUtils.addTankData(buf, inputGasTank);
+            TileUtils.addTankData(buf, outputGasTank);
         }
     }
 

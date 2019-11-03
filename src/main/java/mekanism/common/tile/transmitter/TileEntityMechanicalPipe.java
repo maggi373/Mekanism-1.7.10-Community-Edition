@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.Collection;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import mekanism.api.TileNetworkList;
+
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.base.ByteBufType;
 import mekanism.common.base.FluidHandlerWrapper;
@@ -266,7 +266,7 @@ public class TileEntityMechanicalPipe extends TileEntityTransmitter<IFluidHandle
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         buf.writeInt(tier.ordinal());
         super.writePacket(buf, type);
     }

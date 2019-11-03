@@ -1,19 +1,17 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
 import mekanism.api.energy.IStrictEnergyOutputter;
 import mekanism.api.energy.IStrictEnergyStorage;
 import mekanism.api.lasers.ILaserReceptor;
-import mekanism.common.LaserManager;
-import mekanism.common.LaserManager.LaserInfo;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.integration.computer.IComputerIntegration;
+import mekanism.common.misc.LaserManager;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
@@ -28,8 +26,9 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
+
+import javax.annotation.Nonnull;
 
 public class TileEntityLaserAmplifier extends TileEntityContainerBlock implements ILaserReceptor, IRedstoneControl, IStrictEnergyOutputter, IStrictEnergyStorage,
       IComputerIntegration, ISecurityTile {
@@ -108,7 +107,7 @@ public class TileEntityLaserAmplifier extends TileEntityContainerBlock implement
                     Mekanism.packetHandler.sendUpdatePacket(this);
                 }
 
-                LaserInfo info = LaserManager.fireLaser(this, facing, firing, world);
+                LaserManager.LaserInfo info = LaserManager.fireLaser(this, facing, firing, world);
                 Coord4D hitCoord = info.movingPos == null ? null : new Coord4D(info.movingPos, world);
 
                 if (hitCoord == null || !hitCoord.equals(digging)) {
@@ -188,32 +187,43 @@ public class TileEntityLaserAmplifier extends TileEntityContainerBlock implement
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(on);
-        data.add(minThreshold);
-        data.add(maxThreshold);
-        data.add(time);
-        data.add(collectedEnergy);
-        data.add(lastFired);
-        data.add(controlType.ordinal());
-        data.add(emittingRedstone);
-        data.add(outputMode.ordinal());
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            Object obj2 = obj[1];
+            if(obj2 instanceof Double) {
+                buf.writeDouble((Double) obj2);
+            } else {
+                buf.writeInt((Integer) obj2);
+            }
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeBoolean(on);
+            buf.writeDouble(minThreshold);
+            buf.writeDouble(maxThreshold);
+            buf.writeInt(time);
+            buf.writeDouble(collectedEnergy);
+            buf.writeDouble(lastFired);
+            buf.writeInt(controlType.ordinal());
+            buf.writeBoolean(emittingRedstone);
+            buf.writeInt(outputMode.ordinal());
+        }
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            switch (dataStream.readInt()) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            switch (buf.readInt()) {
                 case 0:
-                    minThreshold = Math.min(MAX_ENERGY, MekanismUtils.convertToJoules(dataStream.readDouble()));
+                    minThreshold = Math.min(MAX_ENERGY, MekanismUtils.convertToJoules(buf.readDouble()));
                     break;
                 case 1:
-                    maxThreshold = Math.min(MAX_ENERGY, MekanismUtils.convertToJoules(dataStream.readDouble()));
+                    maxThreshold = Math.min(MAX_ENERGY, MekanismUtils.convertToJoules(buf.readDouble()));
                     break;
                 case 2:
-                    time = dataStream.readInt();
+                    time = buf.readInt();
                     break;
                 case 3:
                     outputMode = RedstoneOutput.values()[outputMode.ordinal() == RedstoneOutput.values().length - 1 ? 0 : outputMode.ordinal() + 1];
@@ -221,19 +231,17 @@ public class TileEntityLaserAmplifier extends TileEntityContainerBlock implement
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            on = dataStream.readBoolean();
-            minThreshold = dataStream.readDouble();
-            maxThreshold = dataStream.readDouble();
-            time = dataStream.readInt();
-            collectedEnergy = dataStream.readDouble();
-            lastFired = dataStream.readDouble();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
-            emittingRedstone = dataStream.readBoolean();
-            outputMode = RedstoneOutput.values()[dataStream.readInt()];
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            on = buf.readBoolean();
+            minThreshold = buf.readDouble();
+            maxThreshold = buf.readDouble();
+            time = buf.readInt();
+            collectedEnergy = buf.readDouble();
+            lastFired = buf.readDouble();
+            controlType = RedstoneControl.values()[buf.readInt()];
+            emittingRedstone = buf.readBoolean();
+            outputMode = RedstoneOutput.values()[buf.readInt()];
         }
     }
 

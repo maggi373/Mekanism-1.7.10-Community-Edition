@@ -3,6 +3,7 @@ package mekanism.common.tile;
 import io.netty.buffer.ByteBuf;
 import mekanism.api.TileNetworkList;
 import mekanism.api.gas.*;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IComparatorSupport;
 import mekanism.common.base.ISustainedData;
 import mekanism.common.base.ITankManager;
@@ -152,22 +153,23 @@ public class TileEntityChemicalDissolutionChamber extends TileEntityMachine impl
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            operatingTicks = dataStream.readInt();
-            TileUtils.readTankData(dataStream, injectTank);
-            TileUtils.readTankData(dataStream, outputTank);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            operatingTicks = buf.readInt();
+            TileUtils.readTankData(buf, injectTank);
+            TileUtils.readTankData(buf, outputTank);
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(operatingTicks);
-        TileUtils.addTankData(data, injectTank);
-        TileUtils.addTankData(data, outputTank);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(operatingTicks);
+            TileUtils.addTankData(buf, injectTank);
+            TileUtils.addTankData(buf, outputTank);
+        }
     }
 
     @Override

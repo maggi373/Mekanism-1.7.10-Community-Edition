@@ -3,6 +3,7 @@ package mekanism.generators.common.tile.reactor;
 import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 import mekanism.api.TileNetworkList;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.integration.computer.IComputerIntegration;
 import mekanism.common.util.LangUtils;
 import net.minecraft.init.Items;
@@ -80,33 +81,39 @@ public class TileEntityReactorLogicAdapter extends TileEntityReactorBlock implem
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int type1 = buf.readInt();
+            if (type1 == 0) {
                 activeCooled = !activeCooled;
-            } else if (type == 1) {
-                logicType = ReactorLogic.values()[dataStream.readInt()];
+            } else if (type1 == 1) {
+                logicType = ReactorLogic.values()[buf.readInt()];
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            logicType = ReactorLogic.values()[dataStream.readInt()];
-            activeCooled = dataStream.readBoolean();
-            prevOutputting = dataStream.readBoolean();
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            logicType = ReactorLogic.values()[buf.readInt()];
+            activeCooled = buf.readBoolean();
+            prevOutputting = buf.readBoolean();
         }
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(logicType.ordinal());
-        data.add(activeCooled);
-        data.add(prevOutputting);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            if(obj.length > 1) {
+                buf.writeInt((Integer) obj[1]);
+            }
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(logicType.ordinal());
+            buf.writeBoolean(activeCooled);
+            buf.writeBoolean(prevOutputting);
+        }
     }
 
     @Override

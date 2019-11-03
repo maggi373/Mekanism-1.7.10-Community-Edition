@@ -18,7 +18,9 @@ import mekanism.client.gui.element.tab.GuiTransporterConfigTab;
 import mekanism.client.gui.element.tab.GuiUpgradeTab;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.inventory.container.ContainerMetallurgicInfuser;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.TileEntityMetallurgicInfuser;
 import mekanism.common.util.LangUtils;
@@ -90,8 +92,7 @@ public class GuiMetallurgicInfuser extends GuiMekanismTile<TileEntityMetallurgic
             int xAxis = x - guiLeft;
             int yAxis = y - guiTop;
             if (xAxis > 148 && xAxis < 168 && yAxis > 73 && yAxis < 82) {
-                TileNetworkList data = TileNetworkList.withContents(0);
-                Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+                Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 0));
                 SoundHandler.playSound(SoundEvents.UI_BUTTON_CLICK);
             }
         }

@@ -42,6 +42,7 @@ public class PacketTileEntity implements IMessageHandler<TileEntityMessage, IMes
         return null;
     }
 
+    @Deprecated
     public static class TileEntityMessage implements IMessage {
 
         public Coord4D coord4D;

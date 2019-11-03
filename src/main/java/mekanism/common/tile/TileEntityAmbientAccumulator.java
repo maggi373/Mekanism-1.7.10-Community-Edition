@@ -3,7 +3,7 @@ package mekanism.common.tile;
 import io.netty.buffer.ByteBuf;
 import java.util.Random;
 import javax.annotation.Nonnull;
-import mekanism.api.TileNetworkList;
+
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
@@ -21,7 +21,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 
 public class TileEntityAmbientAccumulator extends TileEntityContainerBlock implements IGasHandler {
 
@@ -75,7 +74,7 @@ public class TileEntityAmbientAccumulator extends TileEntityContainerBlock imple
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         TileUtils.addTankData(buf, collectedGas);
     }
 

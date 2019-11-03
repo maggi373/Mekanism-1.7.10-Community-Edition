@@ -201,20 +201,19 @@ public class SynchronizedMatrixData extends SynchronizedData<SynchronizedMatrixD
         }
     }
 
-    public TileNetworkList addStructureData(TileNetworkList data) {
-        data.add(cachedTotal);
-        data.add(storageCap);
-        data.add(transferCap);
-        data.add(lastInput);
-        data.add(lastOutput);
+    public void addStructureData(ByteBuf buf) {
+        buf.writeDouble(cachedTotal);
+        buf.writeDouble(storageCap);
+        buf.writeDouble(transferCap);
+        buf.writeDouble(lastInput);
+        buf.writeDouble(lastOutput);
 
-        data.add(volWidth);
-        data.add(volHeight);
-        data.add(volLength);
+        buf.writeInt(volWidth);
+        buf.writeInt(volHeight);
+        buf.writeInt(volLength);
 
-        data.add(cells.size());
-        data.add(providers.size());
-        return data;
+        buf.writeInt(cells.size());
+        buf.writeInt(providers.size());
     }
 
     public void readStructureData(ByteBuf dataStream) {

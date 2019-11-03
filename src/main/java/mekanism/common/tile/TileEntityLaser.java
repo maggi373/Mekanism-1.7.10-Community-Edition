@@ -1,11 +1,9 @@
 package mekanism.common.tile;
 
-import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
-import mekanism.common.LaserManager;
-import mekanism.common.LaserManager.LaserInfo;
 import mekanism.common.Mekanism;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.misc.LaserManager;
 import mekanism.common.tile.prefab.TileEntityEffectsBlock;
 import mekanism.common.util.InventoryUtils;
 import net.minecraft.block.state.IBlockState;
@@ -16,6 +14,8 @@ import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.items.CapabilityItemHandler;
+
+import javax.annotation.Nonnull;
 
 public class TileEntityLaser extends TileEntityEffectsBlock {
 
@@ -53,7 +53,7 @@ public class TileEntityLaser extends TileEntityEffectsBlock {
         } else {
             if (getEnergy() >= MekanismConfig.current().usage.laser.val()) {
                 setActive(true);
-                LaserInfo info = LaserManager.fireLaser(this, facing, MekanismConfig.current().usage.laser.val(), world);
+                LaserManager.LaserInfo info = LaserManager.fireLaser(this, facing, MekanismConfig.current().usage.laser.val(), world);
                 Coord4D hitCoord = info.movingPos == null ? null : new Coord4D(info.movingPos, world);
 
                 if (hitCoord == null || !hitCoord.equals(digging)) {

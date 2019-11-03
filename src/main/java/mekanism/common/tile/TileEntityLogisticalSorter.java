@@ -1,44 +1,24 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.Iterator;
-import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigCardAccess.ISpecialConfigData;
-import mekanism.api.TileNetworkList;
-import mekanism.common.HashList;
 import mekanism.common.Mekanism;
-import mekanism.common.Upgrade;
-import mekanism.common.base.IComparatorSupport;
-import mekanism.common.base.ILogisticalTransporter;
-import mekanism.common.base.IRedstoneControl;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.IUpgradeTile;
+import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
-import mekanism.common.content.transporter.Finder;
-import mekanism.common.content.transporter.InvStack;
-import mekanism.common.content.transporter.StackSearcher;
-import mekanism.common.content.transporter.TItemStackFilter;
-import mekanism.common.content.transporter.TOreDictFilter;
-import mekanism.common.content.transporter.TransitRequest;
+import mekanism.common.content.transporter.*;
 import mekanism.common.content.transporter.TransitRequest.TransitResponse;
-import mekanism.common.content.transporter.TransporterFilter;
 import mekanism.common.integration.computer.IComputerIntegration;
 import mekanism.common.misc.HashList;
 import mekanism.common.misc.Upgrade;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.tile.prefab.TileEntityEffectsBlock;
-import mekanism.common.util.CapabilityUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.ItemDataUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.StackUtils;
-import mekanism.common.util.TransporterUtils;
+import mekanism.common.util.*;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
@@ -52,6 +32,9 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
+
+import javax.annotation.Nonnull;
+import java.util.Iterator;
 
 public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implements IRedstoneControl, ISpecialConfigData, ISustainedData, ISecurityTile,
       IComputerIntegration, IUpgradeTile, IComparatorSupport {
@@ -139,7 +122,8 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
             }
             if (playersUsing.size() > 0) {
                 for (EntityPlayer player : playersUsing) {
-                    Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getGenericPacket(new TileNetworkList())), (EntityPlayerMP) player);
+                    //Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getGenericPacket(new TileNetworkList())), (EntityPlayerMP) player);
+                    Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT, 1), (EntityPlayerMP) player);
                 }
             }
 
@@ -213,71 +197,6 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
         }
     }
 
-    @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
-                int clickType = dataStream.readInt();
-                if (clickType == 0) {
-                    color = TransporterUtils.increment(color);
-                } else if (clickType == 1) {
-                    color = TransporterUtils.decrement(color);
-                } else if (clickType == 2) {
-                    color = null;
-                }
-            } else if (type == 1) {
-                autoEject = !autoEject;
-            } else if (type == 2) {
-                roundRobin = !roundRobin;
-                rrIndex = 0;
-            } else if (type == 3) {
-                // Move filter up
-                int filterIndex = dataStream.readInt();
-                filters.swap(filterIndex, filterIndex - 1);
-                for (EntityPlayer player : playersUsing) {
-                    openInventory(player);
-                }
-            } else if (type == 4) {
-                // Move filter down
-                int filterIndex = dataStream.readInt();
-                filters.swap(filterIndex, filterIndex + 1);
-                for (EntityPlayer player : playersUsing) {
-                    openInventory(player);
-                }
-            } else if (type == 5) {
-                singleItem = !singleItem;
-            }
-            return;
-        }
-
-        boolean wasActive = isActive;
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            int type = dataStream.readInt();
-
-            if (type == 0) {
-                readState(dataStream);
-                readFilters(dataStream);
-            } else if (type == 1) {
-                readState(dataStream);
-            } else if (type == 2) {
-                readFilters(dataStream);
-            }
-            if (wasActive != isActive) {
-                //TileEntityEffectsBlock only updates it if it was not recently turned off.
-                // (This is soo that lighting updates do not cause lag)
-                // The sorter gets toggled a lot we need to make sure to update it anyways
-                // so that the light on the side of it (the texture) updates properly.
-                // We do not need to worry about block lighting updates causing lag as
-                // #lightUpdate() returns false meaning that logistical sorters do not give
-                // off actual light.
-                MekanismUtils.updateBlock(world, getPos());
-            }
-        }
-    }
-
     private void readState(ByteBuf dataStream) {
         controlType = RedstoneControl.values()[dataStream.readInt()];
         int c = dataStream.readInt();
@@ -300,51 +219,129 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(0);
-        data.add(controlType.ordinal());
-        if (color != null) {
-            data.add(TransporterUtils.colors.indexOf(color));
-        } else {
-            data.add(-1);
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int type1 = buf.readInt();
+            int type2 = buf.readInt();
+            switch (type1) {
+                case 0:
+                    if (type2 == 0) {
+                        color = TransporterUtils.increment(color);
+                    } else if (type2 == 1) {
+                        color = TransporterUtils.decrement(color);
+                    } else if (type2 == 2) {
+                        color = null;
+                    }
+                    break;
+                case 1:
+                    autoEject = !autoEject;
+                    break;
+                case 2:
+                    roundRobin = !roundRobin;
+                    rrIndex = 0;
+                    break;
+                case 3:
+                    filters.swap(type2, type2 - 1);
+                    for (EntityPlayer player : playersUsing) {
+                        openInventory(player);
+                    }
+                    break;
+                case 4:
+                    filters.swap(type2, type2 + 1);
+                    for (EntityPlayer player : playersUsing) {
+                        openInventory(player);
+                    }
+                    break;
+                case 5:
+                    singleItem = !singleItem;
+                    break;
+            }
+            return;
         }
-
-        data.add(autoEject);
-        data.add(roundRobin);
-        data.add(singleItem);
-
-        data.add(filters.size());
-        for (TransporterFilter filter : filters) {
-            filter.write(data);
+        boolean wasActive = isActive;
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            int type1 = buf.readInt();
+            if (type1 == 0) {
+                readState(buf);
+                readFilters(buf);
+            } else if (type1 == 1) {
+                readState(buf);
+            } else if (type1 == 2) {
+                readFilters(buf);
+            }
+            if (wasActive != isActive) {
+                MekanismUtils.updateBlock(world, getPos());
+            }
         }
-        return data;
     }
 
-    public TileNetworkList getGenericPacket(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(1);
-        data.add(controlType.ordinal());
-        if (color != null) {
-            data.add(TransporterUtils.colors.indexOf(color));
-        } else {
-            data.add(-1);
+    @Override
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            buf.writeInt((Integer) obj[1]);
+            return;
         }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            int packetType = 0;
+            if(obj.length > 0) {
+                try {
+                    packetType = (int) obj[0];
+                } catch (final Exception ignored) {
 
-        data.add(autoEject);
-        data.add(roundRobin);
-        data.add(singleItem);
-        return data;
+                }
+            }
+            switch (packetType) {
+                case 0:
+                    buf.writeInt(0);
+                    buf.writeInt(controlType.ordinal());
+                    if (color != null) {
+                        buf.writeInt(TransporterUtils.colors.indexOf(color));
+                    } else {
+                        buf.writeInt(-1);
+                    }
+
+                    buf.writeBoolean(autoEject);
+                    buf.writeBoolean(roundRobin);
+                    buf.writeBoolean(singleItem);
+
+                    buf.writeInt(filters.size());
+                    for (TransporterFilter filter : filters) {
+                        filter.write(buf);
+                    }
+                    break;
+                case 1:
+                    writeGenericPacket(buf);
+                    break;
+                case 2:
+                    writeFilterPacket(buf);
+                    break;
+            }
+        }
     }
 
-    public TileNetworkList getFilterPacket(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(2);
-        data.add(filters.size());
-        for (TransporterFilter filter : filters) {
-            filter.write(data);
+    public void writeGenericPacket(ByteBuf buf) {
+        buf.writeInt(1);
+        buf.writeInt(controlType.ordinal());
+        if (color != null) {
+            buf.writeInt(TransporterUtils.colors.indexOf(color));
+        } else {
+            buf.writeInt(-1);
         }
-        return data;
+
+        buf.writeBoolean(autoEject);
+        buf.writeBoolean(roundRobin);
+        buf.writeBoolean(singleItem);
+    }
+
+    public void writeFilterPacket(ByteBuf buf) {
+        buf.writeInt(2);
+        buf.writeInt(filters.size());
+        for (TransporterFilter filter : filters) {
+            filter.write(buf);
+        }
     }
 
     public boolean canSendHome(ItemStack stack) {
@@ -612,7 +609,8 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
         }
 
         for (EntityPlayer player : playersUsing) {
-            Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getGenericPacket(new TileNetworkList())), (EntityPlayerMP) player);
+            //Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getGenericPacket(new TileNetworkList())), (EntityPlayerMP) player);
+            Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT, 1), (EntityPlayerMP) player);
         }
         return null;
     }

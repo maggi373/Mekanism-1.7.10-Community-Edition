@@ -10,7 +10,9 @@ import mekanism.client.gui.button.GuiButtonDisableableImage;
 import mekanism.client.gui.element.GuiScrollList;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.inventory.container.ContainerSecurityDesk;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.security.ISecurityTile.SecurityMode;
 import mekanism.common.tile.TileEntitySecurityDesk;
@@ -65,8 +67,9 @@ public class GuiSecurityDesk extends GuiMekanismTile<TileEntitySecurityDesk> {
         if (trusted.isEmpty()) {
             return;
         }
-        TileNetworkList data = TileNetworkList.withContents(0, trusted);
-        Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+        //TileNetworkList data = TileNetworkList.withContents(0, trusted);
+        //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+        Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 0, trusted));
     }
 
     public void updateButtons() {
@@ -138,21 +141,26 @@ public class GuiSecurityDesk extends GuiMekanismTile<TileEntitySecurityDesk> {
         if (guibutton.id == removeButton.id) {
             int selection = scrollList.getSelection();
             if (tileEntity.frequency != null && selection != -1) {
-                TileNetworkList data = TileNetworkList.withContents(1, tileEntity.frequency.trusted.get(selection));
-                Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+                //TileNetworkList data = TileNetworkList.withContents(1, tileEntity.frequency.trusted.get(selection));
+                Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 1, tileEntity.frequency.trusted.get(selection)));
+                //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
                 scrollList.clearSelection();
             }
         } else if (guibutton.id == publicButton.id) {
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(3, 0)));
+            //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(3, 0)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 3, 0));
         } else if (guibutton.id == privateButton.id) {
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(3, 1)));
+            //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(3, 1)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 3, 1));
         } else if (guibutton.id == trustedButton.id) {
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(3, 2)));
+            //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(3, 2)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 3, 2));
         } else if (guibutton.id == checkboxButton.id) {
             addTrusted(trustedField.getText());
             trustedField.setText("");
         } else if (guibutton.id == overrideButton.id) {
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(2)));
+            //Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, TileNetworkList.withContents(2)));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 2));
         }
         updateButtons();
     }

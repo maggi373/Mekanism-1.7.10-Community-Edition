@@ -5,5 +5,5 @@ package mekanism.common.base;
  */
 public enum ByteBufType {
     SERVER_TO_CLIENT,
-    CLIENT_TO_SERVER
+    GUI_TO_SERVER
 }

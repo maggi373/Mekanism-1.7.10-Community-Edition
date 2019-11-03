@@ -12,7 +12,9 @@ import mekanism.client.gui.element.gauge.GuiGasGauge;
 import mekanism.client.gui.element.gauge.GuiGauge.Type;
 import mekanism.client.render.MekanismRenderer;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.inventory.container.ContainerNull;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.util.LangUtils;
 import mekanism.common.util.MekanismUtils;
@@ -102,8 +104,7 @@ public class GuiReactorFuel extends GuiReactorInfo {
         if (!injectionRateField.getText().isEmpty()) {
             int toUse = Math.max(0, Integer.parseInt(injectionRateField.getText()));
             toUse -= toUse % 2;
-            TileNetworkList data = TileNetworkList.withContents(0, toUse);
-            Mekanism.packetHandler.sendToServer(new TileEntityMessage(tileEntity, data));
+            Mekanism.packetHandler.sendToServer(new PacketByteBuf.ByteBufMessage(tileEntity, ByteBufType.GUI_TO_SERVER, 0, toUse));
             injectionRateField.setText("");
         }
     }

@@ -161,28 +161,30 @@ public abstract class TileEntityMultiblock<T extends SynchronizedData<T>> extend
     public abstract MultiblockManager<T> getManager();
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         super.writePacket(buf, type);
-        buf.writeBoolean(isRendering);
-        buf.writeBoolean(structure != null);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeBoolean(isRendering);
+            buf.writeBoolean(structure != null);
 
-        if (structure != null && isRendering) {
-            if (sendStructure) {
-                sendStructure = false;
+            if (structure != null && isRendering) {
+                if (sendStructure) {
+                    sendStructure = false;
 
-                buf.writeBoolean(true);
+                    buf.writeBoolean(true);
 
-                buf.writeInt(structure.volHeight);
-                buf.writeInt(structure.volWidth);
-                buf.writeInt(structure.volLength);
+                    buf.writeInt(structure.volHeight);
+                    buf.writeInt(structure.volWidth);
+                    buf.writeInt(structure.volLength);
 
-                structure.renderLocation.write(buf);
-                buf.writeBoolean(structure.inventoryID != null);//boolean for if has inv id
-                if (structure.inventoryID != null) {
-                    ByteBufUtils.writeUTF8String(buf, structure.inventoryID);
+                    structure.renderLocation.write(buf);
+                    buf.writeBoolean(structure.inventoryID != null);//boolean for if has inv id
+                    if (structure.inventoryID != null) {
+                        ByteBufUtils.writeUTF8String(buf, structure.inventoryID);
+                    }
+                } else {
+                    buf.writeBoolean(false);
                 }
-            } else {
-                buf.writeBoolean(false);
             }
         }
     }

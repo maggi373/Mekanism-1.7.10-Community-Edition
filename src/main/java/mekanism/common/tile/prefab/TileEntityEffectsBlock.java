@@ -1,7 +1,6 @@
 package mekanism.common.tile.prefab;
 
 import io.netty.buffer.ByteBuf;
-import mekanism.api.TileNetworkList;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
 import mekanism.common.base.ByteBufType;
@@ -16,7 +15,6 @@ import net.minecraft.client.audio.ISound;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -174,11 +172,8 @@ public abstract class TileEntityEffectsBlock extends TileEntityElectricBlock imp
             isActive = newActive;
 
             if (stateChange && !isActive) {
-                // Switched off; note the time
                 lastActive = world.getTotalWorldTime();
-            } else if (stateChange && isActive) {
-                // Switching on; if lastActive is not currently set, trigger a lighting update
-                // and make sure lastActive is clear
+            } else if (stateChange) {
                 if (lastActive == -1) {
                     MekanismUtils.updateBlock(world, getPos());
                 }
@@ -188,9 +183,11 @@ public abstract class TileEntityEffectsBlock extends TileEntityElectricBlock imp
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         super.writePacket(buf, type);
-        buf.writeBoolean(isActive);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeBoolean(isActive);
+        }
     }
 
     @Override

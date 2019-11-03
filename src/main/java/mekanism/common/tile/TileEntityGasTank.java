@@ -1,25 +1,15 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import javax.annotation.Nonnull;
 import mekanism.api.EnumColor;
-import mekanism.api.TileNetworkList;
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTank;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
-import mekanism.api.gas.IGasItem;
+import mekanism.api.gas.*;
 import mekanism.api.transmitters.TransmissionType;
 import mekanism.common.Mekanism;
-import mekanism.common.SideData;
-import mekanism.common.base.IComparatorSupport;
-import mekanism.common.base.IRedstoneControl;
-import mekanism.common.base.ISideConfiguration;
-import mekanism.common.base.ITierUpgradeable;
+import mekanism.common.base.*;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.integration.computer.IComputerIntegration;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
+import mekanism.common.misc.SideData;
+import mekanism.common.network.PacketByteBuf;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tier.GasTankTier;
@@ -27,11 +17,7 @@ import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
-import mekanism.common.util.GasUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.LangUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.TileUtils;
+import mekanism.common.util.*;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
@@ -39,7 +25,8 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+
+import javax.annotation.Nonnull;
 
 public class TileEntityGasTank extends TileEntityContainerBlock implements IGasHandler, IRedstoneControl, ISideConfiguration, ISecurityTile, ITierUpgradeable,
       IComputerIntegration, IComparatorSupport {
@@ -233,34 +220,6 @@ public class TileEntityGasTank extends TileEntityContainerBlock implements IGasH
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
-                int index = (dumping.ordinal() + 1) % GasMode.values().length;
-                dumping = GasMode.values()[index];
-            }
-            for (EntityPlayer player : playersUsing) {
-                Mekanism.packetHandler.sendTo(new TileEntityMessage(this), (EntityPlayerMP) player);
-            }
-
-            return;
-        }
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            GasTankTier prevTier = tier;
-            tier = GasTankTier.values()[dataStream.readInt()];
-            gasTank.setMaxGas(tier.getStorage());
-            TileUtils.readTankData(dataStream, gasTank);
-            dumping = GasMode.values()[dataStream.readInt()];
-            controlType = RedstoneControl.values()[dataStream.readInt()];
-            if (prevTier != tier) {
-                MekanismUtils.updateBlock(world, getPos());
-            }
-        }
-    }
-
-    @Override
     public void readFromNBT(NBTTagCompound nbtTags) {
         super.readFromNBT(nbtTags);
         tier = GasTankTier.values()[nbtTags.getInteger("tier")];
@@ -281,13 +240,45 @@ public class TileEntityGasTank extends TileEntityContainerBlock implements IGasH
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(tier.ordinal());
-        TileUtils.addTankData(data, gasTank);
-        data.add(dumping.ordinal());
-        data.add(controlType.ordinal());
-        return data;
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int type1 = buf.readInt();
+            if (type1 == 0) {
+                int index = (dumping.ordinal() + 1) % GasMode.values().length;
+                dumping = GasMode.values()[index];
+            }
+            for (EntityPlayer player : playersUsing) {
+                Mekanism.packetHandler.sendTo(new PacketByteBuf.ByteBufMessage(this, ByteBufType.SERVER_TO_CLIENT), (EntityPlayerMP) player);
+            }
+            return;
+        }
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            GasTankTier prevTier = tier;
+            tier = GasTankTier.values()[buf.readInt()];
+            gasTank.setMaxGas(tier.getStorage());
+            TileUtils.readTankData(buf, gasTank);
+            dumping = GasMode.values()[buf.readInt()];
+            controlType = RedstoneControl.values()[buf.readInt()];
+            if (prevTier != tier) {
+                MekanismUtils.updateBlock(world, getPos());
+            }
+        }
+    }
+
+    @Override
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(tier.ordinal());
+            TileUtils.addTankData(buf, gasTank);
+            buf.writeInt(dumping.ordinal());
+            buf.writeInt(controlType.ordinal());
+        }
     }
 
     @Override

@@ -1,20 +1,12 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.Objects;
-import javax.annotation.Nonnull;
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigCardAccess;
-import mekanism.api.TileNetworkList;
 import mekanism.api.infuse.InfuseObject;
 import mekanism.api.infuse.InfuseRegistry;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.InfuseStorage;
-import mekanism.common.MekanismBlocks;
-import mekanism.common.MekanismItems;
-import mekanism.common.PacketHandler;
-import mekanism.common.SideData;
-import mekanism.common.Upgrade;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IFactory.RecipeType;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.base.ISustainedData;
@@ -45,9 +37,12 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.items.ItemHandlerHelper;
 import org.jetbrains.annotations.Contract;
+
+import javax.annotation.Nonnull;
+import java.util.Objects;
 
 public class TileEntityMetallurgicInfuser extends TileEntityOperationalMachine implements IComputerIntegration, ISideConfiguration, IConfigCardAccess, ITierUpgradeable,
       ISustainedData {
@@ -256,9 +251,9 @@ public class TileEntityMetallurgicInfuser extends TileEntityOperationalMachine i
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int amount = dataStream.readInt();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int amount = buf.readInt();
             if (amount == 0) {
                 infuseStored.setEmpty();
             } else {
@@ -266,13 +261,12 @@ public class TileEntityMetallurgicInfuser extends TileEntityOperationalMachine i
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            int amount = dataStream.readInt();
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            int amount = buf.readInt();
             if (amount > 0) {
                 infuseStored.setAmount(amount);
-                infuseStored.setType(InfuseRegistry.get(PacketHandler.readString(dataStream)));
+                infuseStored.setType(InfuseRegistry.get(PacketHandler.readString(buf)));
             } else {
                 infuseStored.setEmpty();
             }
@@ -280,13 +274,18 @@ public class TileEntityMetallurgicInfuser extends TileEntityOperationalMachine i
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(infuseStored.getAmount());
-        if (infuseStored.getAmount() > 0) {
-            data.add(infuseStored.getType().name);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            return;
         }
-        return data;
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeInt(infuseStored.getAmount());
+            if (infuseStored.getAmount() > 0) {
+                ByteBufUtils.writeUTF8String(buf, infuseStored.getType().name);
+            }
+        }
     }
 
     @Override

@@ -6,6 +6,7 @@ import mekanism.api.Coord4D;
 import mekanism.api.TileNetworkList;
 import mekanism.api.energy.IStrictEnergyStorage;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.multiblock.MultiblockCache;
 import mekanism.common.multiblock.MultiblockManager;
@@ -145,63 +146,65 @@ public class TileEntityTurbineCasing extends TileEntityMultiblock<SynchronizedTu
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-
-        if (structure != null) {
-            data.add(structure.volume);
-            data.add(structure.lowerVolume);
-            data.add(structure.vents);
-            data.add(structure.blades);
-            data.add(structure.coils);
-            data.add(structure.condensers);
-            data.add(structure.getDispersers());
-            data.add(structure.electricityStored);
-            data.add(structure.clientFlow);
-            data.add(structure.lastSteamInput);
-            data.add(structure.dumpMode.ordinal());
-            TileUtils.addFluidStack(data, structure.fluidStored);
-            if (isRendering) {
-                structure.complex.write(data);
-                data.add(structure.clientRotation);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            if (structure != null) {
+                buf.writeInt(structure.volume);
+                buf.writeInt(structure.lowerVolume);
+                buf.writeInt(structure.vents);
+                buf.writeInt(structure.blades);
+                buf.writeInt(structure.coils);
+                buf.writeInt(structure.condensers);
+                buf.writeInt(structure.getDispersers());
+                buf.writeDouble(structure.electricityStored);
+                buf.writeInt(structure.clientFlow);
+                buf.writeInt(structure.lastSteamInput);
+                buf.writeInt(structure.dumpMode.ordinal());
+                TileUtils.addFluidStack(buf, structure.fluidStored);
+                if (isRendering) {
+                    structure.complex.write(buf);
+                    buf.writeFloat(structure.clientRotation);
+                }
             }
         }
-        return data;
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (!world.isRemote) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
             if (structure != null) {
-                byte type = dataStream.readByte();
-                if (type == 0) {
+                int type1 = buf.readInt();
+                if (type1 == 0) {
                     structure.dumpMode = GasMode.values()[structure.dumpMode.ordinal() == GasMode.values().length - 1 ? 0 : structure.dumpMode.ordinal() + 1];
                 }
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
             if (clientHasStructure) {
-                structure.volume = dataStream.readInt();
-                structure.lowerVolume = dataStream.readInt();
-                structure.vents = dataStream.readInt();
-                structure.blades = dataStream.readInt();
-                structure.coils = dataStream.readInt();
-                structure.condensers = dataStream.readInt();
-                structure.clientDispersers = dataStream.readInt();
-                structure.electricityStored = dataStream.readDouble();
-                structure.clientFlow = dataStream.readInt();
-                structure.lastSteamInput = dataStream.readInt();
-                structure.dumpMode = GasMode.values()[dataStream.readInt()];
+                structure.volume = buf.readInt();
+                structure.lowerVolume = buf.readInt();
+                structure.vents = buf.readInt();
+                structure.blades = buf.readInt();
+                structure.coils = buf.readInt();
+                structure.condensers = buf.readInt();
+                structure.clientDispersers = buf.readInt();
+                structure.electricityStored = buf.readDouble();
+                structure.clientFlow = buf.readInt();
+                structure.lastSteamInput = buf.readInt();
+                structure.dumpMode = GasMode.values()[buf.readInt()];
 
-                structure.fluidStored = TileUtils.readFluidStack(dataStream);
+                structure.fluidStored = TileUtils.readFluidStack(buf);
 
                 if (isRendering) {
-                    structure.complex = Coord4D.read(dataStream);
-                    structure.clientRotation = dataStream.readFloat();
+                    structure.complex = Coord4D.read(buf);
+                    structure.clientRotation = buf.readFloat();
                     SynchronizedTurbineData.clientRotationMap.put(structure.inventoryID, structure.clientRotation);
                 }
             }

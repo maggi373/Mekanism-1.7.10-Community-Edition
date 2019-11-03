@@ -6,6 +6,8 @@ import mekanism.api.Coord4D;
 import mekanism.api.EnumColor;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
+import mekanism.common.base.ITileByteBuf;
 import mekanism.common.base.ITileNetwork;
 import mekanism.common.block.property.PropertyColor;
 import mekanism.common.block.states.BlockStateFacing;
@@ -19,7 +21,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.property.IExtendedBlockState;
 
-public class TileEntityGlowPanel extends TileEntity implements ITileNetwork {
+public class TileEntityGlowPanel extends TileEntity implements ITileByteBuf {
 
     public EnumColor colour = EnumColor.WHITE;
     public EnumFacing side = EnumFacing.DOWN;
@@ -42,20 +44,19 @@ public class TileEntityGlowPanel extends TileEntity implements ITileNetwork {
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        side = EnumFacing.byIndex(dataStream.readInt());
-        colour = EnumColor.DYES[dataStream.readInt()];
-        MekanismUtils.updateBlock(world, pos);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if (Mekanism.hooks.MCMPLoaded) {
+            MultipartTileNetworkJoiner.addMultipartHeader(this, buf, side);
+        }
+        buf.writeInt(side.ordinal());
+        buf.writeInt(colour.getMetaValue());
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        if (Mekanism.hooks.MCMPLoaded) {
-            MultipartTileNetworkJoiner.addMultipartHeader(this, data, side);
-        }
-        data.add(side.ordinal());
-        data.add(colour.getMetaValue());
-        return data;
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        side = EnumFacing.byIndex(buf.readInt());
+        colour = EnumColor.DYES[buf.readInt()];
+        MekanismUtils.updateBlock(world, pos);
     }
 
     @Override
@@ -90,13 +91,13 @@ public class TileEntityGlowPanel extends TileEntity implements ITileNetwork {
 
     @Override
     public boolean hasCapability(@Nonnull Capability<?> capability, EnumFacing facing) {
-        return capability == Capabilities.TILE_NETWORK_CAPABILITY || super.hasCapability(capability, facing);
+        return capability == Capabilities.TILE_BYTE_BUF || super.hasCapability(capability, facing);
     }
 
     @Override
     public <T> T getCapability(@Nonnull Capability<T> capability, EnumFacing facing) {
-        if (capability == Capabilities.TILE_NETWORK_CAPABILITY) {
-            return Capabilities.TILE_NETWORK_CAPABILITY.cast(this);
+        if (capability == Capabilities.TILE_BYTE_BUF) {
+            return Capabilities.TILE_BYTE_BUF.cast(this);
         }
         return super.getCapability(capability, facing);
     }

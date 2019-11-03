@@ -6,6 +6,7 @@ import java.util.Random;
 import javax.annotation.Nonnull;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.entity.EntityRobit;
 import mekanism.common.tile.prefab.TileEntityEffectsBlock;
@@ -126,10 +127,10 @@ public class TileEntityChargepad extends TileEntityEffectsBlock {
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            clientActive = dataStream.readBoolean();
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            clientActive = buf.readBoolean();
             if (clientActive != isActive) {
                 isActive = clientActive;
                 MekanismUtils.updateBlock(world, getPos());
@@ -138,10 +139,11 @@ public class TileEntityChargepad extends TileEntityEffectsBlock {
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(isActive);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeBoolean(isActive);
+        }
     }
 
     @Override

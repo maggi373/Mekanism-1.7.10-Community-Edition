@@ -7,6 +7,7 @@ import mekanism.api.gas.GasStack;
 import mekanism.api.gas.GasTank;
 import mekanism.client.sound.SoundHandler;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.registry.MekanismFluids;
 import mekanism.common.base.IActiveState;
 import mekanism.common.config.MekanismConfig;
@@ -195,39 +196,43 @@ public class TileEntityReactorController extends TileEntityReactorBlock implemen
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(getReactor() != null && getReactor().isFormed());
-        if (getReactor() != null) {
-            data.add(getReactor().getPlasmaTemp());
-            data.add(getReactor().getCaseTemp());
-            data.add(getReactor().getInjectionRate());
-            data.add(getReactor().isBurning());
-            data.add(fuelTank.getStored());
-            data.add(deuteriumTank.getStored());
-            data.add(tritiumTank.getStored());
-            TileUtils.addTankData(data, waterTank);
-            TileUtils.addTankData(data, steamTank);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            buf.writeInt((Integer) obj[1]);
+            return;
         }
-        return data;
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeBoolean(getReactor() != null && getReactor().isFormed());
+            if (getReactor() != null) {
+                buf.writeDouble(getReactor().getPlasmaTemp());
+                buf.writeDouble(getReactor().getCaseTemp());
+                buf.writeInt(getReactor().getInjectionRate());
+                buf.writeBoolean(getReactor().isBurning());
+                buf.writeInt(fuelTank.getStored());
+                buf.writeInt(deuteriumTank.getStored());
+                buf.writeInt(tritiumTank.getStored());
+                TileUtils.addTankData(buf, waterTank);
+                TileUtils.addTankData(buf, steamTank);
+            }
+        }
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int type1 = buf.readInt();
+            if (type1 == 0) {
                 if (getReactor() != null) {
-                    getReactor().setInjectionRate(dataStream.readInt());
+                    getReactor().setInjectionRate(buf.readInt());
                 }
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            boolean formed = dataStream.readBoolean();
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            boolean formed = buf.readBoolean();
             if (formed) {
                 if (getReactor() == null || !getReactor().formed) {
                     BlockPos corner = getPos().subtract(new Vec3i(2, 4, 2));
@@ -239,15 +244,15 @@ public class TileEntityReactorController extends TileEntityReactorBlock implemen
                 }
 
                 getReactor().formed = true;
-                getReactor().setPlasmaTemp(dataStream.readDouble());
-                getReactor().setCaseTemp(dataStream.readDouble());
-                getReactor().setInjectionRate(dataStream.readInt());
-                getReactor().setBurning(dataStream.readBoolean());
-                fuelTank.setGas(new GasStack(MekanismFluids.FusionFuel, dataStream.readInt()));
-                deuteriumTank.setGas(new GasStack(MekanismFluids.Deuterium, dataStream.readInt()));
-                tritiumTank.setGas(new GasStack(MekanismFluids.Tritium, dataStream.readInt()));
-                TileUtils.readTankData(dataStream, waterTank);
-                TileUtils.readTankData(dataStream, steamTank);
+                getReactor().setPlasmaTemp(buf.readDouble());
+                getReactor().setCaseTemp(buf.readDouble());
+                getReactor().setInjectionRate(buf.readInt());
+                getReactor().setBurning(buf.readBoolean());
+                fuelTank.setGas(new GasStack(MekanismFluids.FusionFuel, buf.readInt()));
+                deuteriumTank.setGas(new GasStack(MekanismFluids.Deuterium, buf.readInt()));
+                tritiumTank.setGas(new GasStack(MekanismFluids.Tritium, buf.readInt()));
+                TileUtils.readTankData(buf, waterTank);
+                TileUtils.readTankData(buf, steamTank);
             } else if (getReactor() != null) {
                 setReactor(null);
                 MekanismUtils.updateBlock(world, getPos());

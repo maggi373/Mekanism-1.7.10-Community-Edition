@@ -139,7 +139,7 @@ public class MultipartTileNetworkJoiner implements ITileByteBuf {
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         for (IntIterator iterator = tileSideMap.keySet().iterator(); iterator.hasNext(); ) {
             int slotValue = iterator.nextInt();
             tileSideMap.get(slotValue).writePacket(buf, type);

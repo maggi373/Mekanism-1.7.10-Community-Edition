@@ -9,7 +9,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nonnull;
-import mekanism.api.TileNetworkList;
+
 import mekanism.api.energy.EnergyStack;
 import mekanism.api.energy.IStrictEnergyAcceptor;
 import mekanism.api.energy.IStrictEnergyStorage;
@@ -313,7 +313,7 @@ public class TileEntityUniversalCable extends TileEntityTransmitter<EnergyAccept
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         buf.writeInt(tier.ordinal());
         super.writePacket(buf, type);
     }

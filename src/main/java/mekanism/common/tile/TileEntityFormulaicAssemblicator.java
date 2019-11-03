@@ -1,22 +1,20 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.List;
-import javax.annotation.Nonnull;
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigCardAccess;
-import mekanism.api.TileNetworkList;
 import mekanism.api.transmitters.TransmissionType;
-import mekanism.common.PacketHandler;
-import mekanism.common.SideData;
-import mekanism.common.Upgrade;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.ISideConfiguration;
 import mekanism.common.base.IUpgradeTile;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.content.assemblicator.RecipeFormula;
+import mekanism.common.handler.PacketHandler;
 import mekanism.common.item.ItemCraftingFormula;
+import mekanism.common.misc.SideData;
+import mekanism.common.misc.Upgrade;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
@@ -35,7 +33,10 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
+
+import javax.annotation.Nonnull;
+import java.util.List;
 
 public class TileEntityFormulaicAssemblicator extends TileEntityElectricBlock implements ISideConfiguration, IUpgradeTile, IRedstoneControl, IConfigCardAccess, ISecurityTile {
 
@@ -507,43 +508,41 @@ public class TileEntityFormulaicAssemblicator extends TileEntityElectricBlock im
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            int type = dataStream.readInt();
-            if (type == 0) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            int i = buf.readInt();
+            if (i == 0) {
                 toggleAutoMode();
-            } else if (type == 1) {
+            } else if (i == 1) {
                 encodeFormula();
-            } else if (type == 2) {
+            } else if (i == 2) {
                 craftSingle();
-            } else if (type == 3) {
+            } else if (i == 3) {
                 craftAll();
-            } else if (type == 4) {
+            } else if (i == 4) {
                 if (formula != null) {
                     moveItemsToGrid();
                 } else {
                     moveItemsToInput(true);
                 }
-            } else if (type == 5) {
+            } else if (i == 5) {
                 toggleStockControl();
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            autoMode = dataStream.readBoolean();
-            operatingTicks = dataStream.readInt();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
-            isRecipe = dataStream.readBoolean();
-            stockControl = dataStream.readBoolean();
-            if (dataStream.readBoolean()) {
-                if (dataStream.readBoolean()) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            autoMode = buf.readBoolean();
+            operatingTicks = buf.readInt();
+            controlType = RedstoneControl.values()[buf.readInt()];
+            isRecipe = buf.readBoolean();
+            stockControl = buf.readBoolean();
+            if (buf.readBoolean()) {
+                if (buf.readBoolean()) {
                     NonNullList<ItemStack> inv = NonNullList.withSize(9, ItemStack.EMPTY);
                     for (int i = 0; i < 9; i++) {
-                        if (dataStream.readBoolean()) {
-                            inv.set(i, PacketHandler.readStack(dataStream));
+                        if (buf.readBoolean()) {
+                            inv.set(i, PacketHandler.readStack(buf));
                         }
                     }
                     formula = new RecipeFormula(world, inv);
@@ -555,33 +554,38 @@ public class TileEntityFormulaicAssemblicator extends TileEntityElectricBlock im
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(autoMode);
-        data.add(operatingTicks);
-        data.add(controlType.ordinal());
-        data.add(isRecipe);
-        data.add(stockControl);
-        if (needsFormulaUpdate) {
-            data.add(true);
-            if (formula != null) {
-                data.add(true);
-                for (int i = 0; i < 9; i++) {
-                    if (!formula.input.get(i).isEmpty()) {
-                        data.add(true);
-                        data.add(formula.input.get(i));
-                    } else {
-                        data.add(false);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeBoolean(autoMode);
+            buf.writeInt(operatingTicks);
+            buf.writeInt(controlType.ordinal());
+            buf.writeBoolean(isRecipe);
+            buf.writeBoolean(stockControl);
+            if (needsFormulaUpdate) {
+                buf.writeBoolean(true);
+                if (formula != null) {
+                    buf.writeBoolean(true);
+                    for (int i = 0; i < 9; i++) {
+                        if (!formula.input.get(i).isEmpty()) {
+                            buf.writeBoolean(true);
+                            ByteBufUtils.writeItemStack(buf, formula.input.get(i));
+                        } else {
+                            buf.writeBoolean(false);
+                        }
                     }
+                } else {
+                    buf.writeBoolean(false);
                 }
             } else {
-                data.add(false);
+                buf.writeBoolean(false);
             }
-        } else {
-            data.add(false);
+            needsFormulaUpdate = false;
         }
-        needsFormulaUpdate = false;
-        return data;
     }
 
     @Override

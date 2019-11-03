@@ -8,6 +8,7 @@ import mekanism.common.Mekanism;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.base.IRedstoneControl.RedstoneControl;
 import mekanism.common.base.ISideConfiguration;
+import mekanism.common.base.ITileByteBuf;
 import mekanism.common.base.ITileNetwork;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
@@ -93,9 +94,9 @@ public class ItemConfigurationCard extends ItemMekanism {
         return EnumActionResult.PASS;
     }
 
-    private <TILE extends TileEntity & ITileNetwork> void updateTile(TileEntity tileEntity) {
+    private <TILE extends TileEntity & ITileByteBuf> void updateTile(TileEntity tileEntity) {
         //Check the capability in case for some reason the tile doesn't want to expose the fact it has it
-        ITileNetwork network = CapabilityUtils.getCapability(tileEntity, Capabilities.TILE_NETWORK_CAPABILITY, null);
+        ITileByteBuf network = CapabilityUtils.getCapability(tileEntity, Capabilities.TILE_BYTE_BUF, null);
         if (network instanceof TileEntity) {
             //Ensure the implementation is still a tile entity
             Mekanism.packetHandler.sendUpdatePacket((TILE) network);

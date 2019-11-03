@@ -72,12 +72,12 @@ public abstract class TransporterFilter implements IFilter {
         }
     }
 
-    public void write(TileNetworkList data) {
-        data.add(allowDefault);
+    public void write(ByteBuf buf) {
+        buf.writeBoolean(allowDefault);
         if (color != null) {
-            data.add(TransporterUtils.colors.indexOf(color));
+            buf.writeInt(TransporterUtils.colors.indexOf(color));
         } else {
-            data.add(-1);
+            buf.writeInt(-1);
         }
     }
 

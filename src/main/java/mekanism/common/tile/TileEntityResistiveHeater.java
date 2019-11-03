@@ -6,6 +6,7 @@ import mekanism.api.Coord4D;
 import mekanism.api.IHeatTransfer;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IRedstoneControl;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
@@ -132,22 +133,21 @@ public class TileEntityResistiveHeater extends TileEntityEffectsBlock implements
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            energyUsage = MekanismUtils.convertToJoules(dataStream.readInt());
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            energyUsage = MekanismUtils.convertToJoules(buf.readInt());
             maxEnergy = energyUsage * 400;
             return;
         }
-
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            energyUsage = dataStream.readDouble();
-            temperature = dataStream.readDouble();
-            clientActive = dataStream.readBoolean();
-            maxEnergy = dataStream.readDouble();
-            soundScale = dataStream.readFloat();
-            controlType = RedstoneControl.values()[dataStream.readInt()];
-            lastEnvironmentLoss = dataStream.readDouble();
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            energyUsage = buf.readDouble();
+            temperature = buf.readDouble();
+            clientActive = buf.readBoolean();
+            maxEnergy = buf.readDouble();
+            soundScale = buf.readFloat();
+            controlType = RedstoneControl.values()[buf.readInt()];
+            lastEnvironmentLoss = buf.readDouble();
             if (updateDelay == 0 && clientActive != isActive) {
                 updateDelay = MekanismConfig.current().general.UPDATE_DELAY.val();
                 isActive = clientActive;
@@ -157,18 +157,21 @@ public class TileEntityResistiveHeater extends TileEntityEffectsBlock implements
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-
-        data.add(energyUsage);
-        data.add(temperature);
-        data.add(isActive);
-        data.add(maxEnergy);
-        data.add(soundScale);
-        data.add(controlType.ordinal());
-
-        data.add(lastEnvironmentLoss);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeInt((Integer) obj[0]);
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeDouble(energyUsage);
+            buf.writeDouble(temperature);
+            buf.writeBoolean(isActive);
+            buf.writeDouble(maxEnergy);
+            buf.writeFloat(soundScale);
+            buf.writeInt(controlType.ordinal());
+            buf.writeDouble(lastEnvironmentLoss);
+        }
     }
 
     @Override

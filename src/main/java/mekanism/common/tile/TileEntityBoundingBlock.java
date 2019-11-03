@@ -3,15 +3,12 @@ package mekanism.common.tile;
 import io.netty.buffer.ByteBuf;
 import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
 import mekanism.common.base.ByteBufType;
 import mekanism.common.base.ITileByteBuf;
-import mekanism.common.base.ITileNetwork;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.network.PacketByteBuf;
 import mekanism.common.network.PacketDataRequest.DataRequestMessage;
-import mekanism.common.network.PacketTileEntity.TileEntityMessage;
 import mekanism.common.tile.prefab.TileEntityBasicBlock;
 import net.minecraft.block.Block;
 import net.minecraft.nbt.NBTTagCompound;
@@ -119,7 +116,7 @@ public class TileEntityBoundingBlock extends TileEntity implements ITileByteBuf 
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
         buf.writeInt(getMainPos().getX());
         buf.writeInt(getMainPos().getY());
         buf.writeInt(getMainPos().getZ());

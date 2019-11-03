@@ -7,6 +7,7 @@ import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
 import mekanism.api.TileNetworkList;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IFluidContainerManager;
 import mekanism.common.block.BlockBasic;
 import mekanism.common.content.tank.SynchronizedTankData;
@@ -141,47 +142,48 @@ public class TileEntityDynamicTank extends TileEntityMultiblock<SynchronizedTank
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        if (structure != null) {
-            data.add(structure.volume * TankUpdateProtocol.FLUID_PER_TANK);
-            data.add(structure.editMode.ordinal());
-            TileUtils.addFluidStack(data, structure.fluidStored);
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            if (structure != null) {
+                buf.writeInt(structure.volume * TankUpdateProtocol.FLUID_PER_TANK);
+                buf.writeInt(structure.editMode.ordinal());
+                TileUtils.addFluidStack(buf, structure.fluidStored);
 
-            if (isRendering) {
-                Set<ValveData> toSend = new HashSet<>();
+                if (isRendering) {
+                    Set<ValveData> toSend = new HashSet<>();
 
-                for (ValveData valveData : structure.valves) {
-                    if (valveData.activeTicks > 0) {
-                        toSend.add(valveData);
+                    for (ValveData valveData : structure.valves) {
+                        if (valveData.activeTicks > 0) {
+                            toSend.add(valveData);
+                        }
                     }
-                }
-                data.add(toSend.size());
-                for (ValveData valveData : toSend) {
-                    valveData.location.write(data);
-                    data.add(valveData.side);
+                    buf.writeInt(toSend.size());
+                    for (ValveData valveData : toSend) {
+                        valveData.location.write(buf);
+                        buf.writeInt(valveData.side.getIndex());
+                    }
                 }
             }
         }
-        return data;
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
             if (clientHasStructure) {
-                clientCapacity = dataStream.readInt();
-                structure.editMode = ContainerEditMode.values()[dataStream.readInt()];
-                structure.fluidStored = TileUtils.readFluidStack(dataStream);
+                clientCapacity = buf.readInt();
+                structure.editMode = ContainerEditMode.values()[buf.readInt()];
+                structure.fluidStored = TileUtils.readFluidStack(buf);
 
                 if (isRendering) {
-                    int size = dataStream.readInt();
+                    int size = buf.readInt();
                     valveViewing.clear();
                     for (int i = 0; i < size; i++) {
                         ValveData data = new ValveData();
-                        data.location = Coord4D.read(dataStream);
-                        data.side = EnumFacing.byIndex(dataStream.readInt());
+                        data.location = Coord4D.read(buf);
+                        data.side = EnumFacing.byIndex(buf.readInt());
                         valveViewing.add(data);
                         TileEntityDynamicTank tileEntity = (TileEntityDynamicTank) data.location.getTileEntity(world);
                         if (tileEntity != null) {

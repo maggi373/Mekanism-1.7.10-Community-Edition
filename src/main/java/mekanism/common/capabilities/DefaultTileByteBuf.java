@@ -12,7 +12,7 @@ public class DefaultTileByteBuf implements ITileByteBuf {
     }
 
     @Override
-    public void writePacket(ByteBuf buf, ByteBufType type) {
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
 
     }
 

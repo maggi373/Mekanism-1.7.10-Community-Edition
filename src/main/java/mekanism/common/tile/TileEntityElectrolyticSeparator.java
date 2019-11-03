@@ -1,24 +1,8 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.EnumSet;
-import java.util.List;
-import javax.annotation.Nonnull;
-import mekanism.api.TileNetworkList;
-import mekanism.api.gas.Gas;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.GasTank;
-import mekanism.api.gas.GasTankInfo;
-import mekanism.api.gas.IGasHandler;
-import mekanism.api.gas.IGasItem;
-import mekanism.common.MekanismFluids;
-import mekanism.common.Upgrade;
-import mekanism.common.Upgrade.IUpgradeInfoHandler;
-import mekanism.common.base.FluidHandlerWrapper;
-import mekanism.common.base.IComparatorSupport;
-import mekanism.common.base.IFluidHandlerWrapper;
-import mekanism.common.base.ISustainedData;
-import mekanism.common.base.ITankManager;
+import mekanism.api.gas.*;
+import mekanism.common.base.*;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.integration.computer.IComputerIntegration;
@@ -28,16 +12,11 @@ import mekanism.common.recipe.RecipeHandler.Recipe;
 import mekanism.common.recipe.inputs.FluidInput;
 import mekanism.common.recipe.machines.SeparatorRecipe;
 import mekanism.common.recipe.outputs.ChemicalPairOutput;
+import mekanism.common.registry.MekanismFluids;
 import mekanism.common.tile.TileEntityGasTank.GasMode;
 import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.prefab.TileEntityMachine;
-import mekanism.common.util.ChargeUtils;
-import mekanism.common.util.FluidContainerUtils;
-import mekanism.common.util.GasUtils;
-import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.ItemDataUtils;
-import mekanism.common.util.MekanismUtils;
-import mekanism.common.util.TileUtils;
+import mekanism.common.util.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
@@ -48,8 +27,11 @@ import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.FluidUtil;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
+
+import javax.annotation.Nonnull;
+import java.util.EnumSet;
+import java.util.List;
 
 public class TileEntityElectrolyticSeparator extends TileEntityMachine implements IFluidHandlerWrapper, IComputerIntegration, ISustainedData, IGasHandler,
         Upgrade.IUpgradeInfoHandler, ITankManager, IComparatorSupport {
@@ -244,40 +226,49 @@ public class TileEntityElectrolyticSeparator extends TileEntityMachine implement
         return InventoryUtils.EMPTY;
     }
 
+    /**
+     * GUI Packet from {@link mekanism.client.gui.GuiElectrolyticSeparator}
+     */
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            byte type = dataStream.readByte();
-            if (type == 0) {
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            byte type1 = buf.readByte();
+            if (type1 == 0) {
                 dumpLeft = GasMode.values()[dumpLeft.ordinal() == GasMode.values().length - 1 ? 0 : dumpLeft.ordinal() + 1];
-            } else if (type == 1) {
+            } else if (type1 == 1) {
                 dumpRight = GasMode.values()[dumpRight.ordinal() == GasMode.values().length - 1 ? 0 : dumpRight.ordinal() + 1];
             }
             return;
         }
-
-        super.handlePacketData(dataStream);
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            TileUtils.readTankData(dataStream, fluidTank);
-            TileUtils.readTankData(dataStream, leftTank);
-            TileUtils.readTankData(dataStream, rightTank);
-            dumpLeft = GasMode.values()[dataStream.readInt()];
-            dumpRight = GasMode.values()[dataStream.readInt()];
-            clientEnergyUsed = dataStream.readDouble();
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            TileUtils.readTankData(buf, fluidTank);
+            TileUtils.readTankData(buf, leftTank);
+            TileUtils.readTankData(buf, rightTank);
+            dumpLeft = GasMode.values()[buf.readInt()];
+            dumpRight = GasMode.values()[buf.readInt()];
+            clientEnergyUsed = buf.readDouble();
         }
     }
 
+    /**
+     * GUI Packet from {@link mekanism.client.gui.GuiElectrolyticSeparator}
+     */
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        TileUtils.addTankData(data, fluidTank);
-        TileUtils.addTankData(data, leftTank);
-        TileUtils.addTankData(data, rightTank);
-        data.add(dumpLeft.ordinal());
-        data.add(dumpRight.ordinal());
-        data.add(clientEnergyUsed);
-        return data;
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        if(type == ByteBufType.GUI_TO_SERVER) {
+            buf.writeByte((byte) obj[0]);
+            return;
+        }
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            TileUtils.addTankData(buf, fluidTank);
+            TileUtils.addTankData(buf, leftTank);
+            TileUtils.addTankData(buf, rightTank);
+            buf.writeInt(dumpLeft.ordinal());
+            buf.writeInt(dumpRight.ordinal());
+            buf.writeDouble(clientEnergyUsed);
+        }
     }
 
     @Override

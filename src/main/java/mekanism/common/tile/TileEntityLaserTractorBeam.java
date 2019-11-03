@@ -1,17 +1,14 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
-import java.util.List;
-import javax.annotation.Nonnull;
 import mekanism.api.Coord4D;
-import mekanism.api.TileNetworkList;
 import mekanism.api.lasers.ILaserReceptor;
-import mekanism.common.LaserManager;
-import mekanism.common.LaserManager.LaserInfo;
 import mekanism.common.Mekanism;
+import mekanism.common.base.ByteBufType;
 import mekanism.common.base.IComparatorSupport;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.misc.LaserManager;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tile.component.TileComponentSecurity;
 import mekanism.common.tile.prefab.TileEntityContainerBlock;
@@ -26,7 +23,9 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+
+import javax.annotation.Nonnull;
+import java.util.List;
 
 public class TileEntityLaserTractorBeam extends TileEntityContainerBlock implements ILaserReceptor, ISecurityTile, IComparatorSupport {
 
@@ -86,7 +85,7 @@ public class TileEntityLaserTractorBeam extends TileEntityContainerBlock impleme
                 Mekanism.packetHandler.sendUpdatePacket(this);
             }
 
-            LaserInfo info = LaserManager.fireLaser(this, facing, firing, world);
+            LaserManager.LaserInfo info = LaserManager.fireLaser(this, facing, firing, world);
             Coord4D hitCoord = info.movingPos == null ? null : new Coord4D(info.movingPos, world);
 
             if (hitCoord == null || !hitCoord.equals(digging)) {
@@ -160,21 +159,22 @@ public class TileEntityLaserTractorBeam extends TileEntityContainerBlock impleme
     }
 
     @Override
-    public TileNetworkList getNetworkedData(TileNetworkList data) {
-        super.getNetworkedData(data);
-        data.add(on);
-        data.add(collectedEnergy);
-        data.add(lastFired);
-        return data;
+    public void readPacket(ByteBuf buf, ByteBufType type) {
+        super.readPacket(buf, type);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            on = buf.readBoolean();
+            collectedEnergy = buf.readDouble();
+            lastFired = buf.readDouble();
+        }
     }
 
     @Override
-    public void handlePacketData(ByteBuf dataStream) {
-        super.handlePacketData(dataStream);
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
-            on = dataStream.readBoolean();
-            collectedEnergy = dataStream.readDouble();
-            lastFired = dataStream.readDouble();
+    public void writePacket(ByteBuf buf, ByteBufType type, Object... obj) {
+        super.writePacket(buf, type, obj);
+        if(type == ByteBufType.SERVER_TO_CLIENT) {
+            buf.writeBoolean(on);
+            buf.writeDouble(collectedEnergy);
+            buf.writeDouble(lastFired);
         }
     }
 
