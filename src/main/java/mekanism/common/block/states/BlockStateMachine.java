@@ -53,6 +53,7 @@ import mekanism.common.tile.TileEntityResistiveHeater;
 import mekanism.common.tile.TileEntityRotaryCondensentrator;
 import mekanism.common.tile.TileEntitySeismicVibrator;
 import mekanism.common.tile.TileEntitySolarNeutronActivator;
+import mekanism.common.tile.TileEntityIsotopicCentrifuge;
 import mekanism.common.tile.TileEntityTeleporter;
 import mekanism.common.util.LangUtils;
 import net.minecraft.block.Block;
@@ -148,7 +149,9 @@ public class BlockStateMachine extends ExtendedBlockState {
         OREDICTIONIFICATOR(MachineBlock.MACHINE_BLOCK_3, 3, "Oredictionificator", 52, TileEntityOredictionificator::new, false, false, false, Plane.HORIZONTAL, true),
         RESISTIVE_HEATER(MachineBlock.MACHINE_BLOCK_3, 4, "ResistiveHeater", 53, TileEntityResistiveHeater::new, true, false, false, Plane.HORIZONTAL, true),
         FORMULAIC_ASSEMBLICATOR(MachineBlock.MACHINE_BLOCK_3, 5, "FormulaicAssemblicator", 56, TileEntityFormulaicAssemblicator::new, true, false, true, Plane.HORIZONTAL, true),
-        FUELWOOD_HEATER(MachineBlock.MACHINE_BLOCK_3, 6, "FuelwoodHeater", 58, TileEntityFuelwoodHeater::new, false, false, false, Plane.HORIZONTAL, true);
+        FUELWOOD_HEATER(MachineBlock.MACHINE_BLOCK_3, 6, "FuelwoodHeater", 58, TileEntityFuelwoodHeater::new, false, false, false, Plane.HORIZONTAL, true),
+        ISOTOPIC_CENTRIFUGE(MachineBlock.MACHINE_BLOCK_3, 7, "IsotopicCentrifuge", 60, TileEntityIsotopicCentrifuge::new, false, true, false, Plane.HORIZONTAL, true);
+
 
         public MachineBlock typeBlock;
         public int meta;
@@ -294,6 +297,8 @@ public class BlockStateMachine extends ExtendedBlockState {
                 case QUANTUM_ENTANGLOPORTER:
                     return 0;
                 case SOLAR_NEUTRON_ACTIVATOR:
+                    return 0;
+                case ISOTOPIC_CENTRIFUGE:
                     return 0;
                 case AMBIENT_ACCUMULATOR:
                     return 0;

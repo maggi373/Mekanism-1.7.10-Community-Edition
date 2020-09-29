@@ -240,6 +240,8 @@ item.silverDust.name=Silver Dust
 item.leadDust.name=Lead Dust
 item.sulfurDust.name=Sulfur Dust
 item.lithiumDust.name=Lithium Dust
+item.yellowcakeDust.name=Yellowcake
+item.fluoriteDust.name=Fluorite
 
 # Clumps
 item.ironClump.name=Iron Clump
@@ -285,6 +287,7 @@ item.glowstoneIngot.name=Glowstone Ingot
 item.steelIngot.name=Steel Ingot
 item.copperIngot.name=Copper Ingot
 item.tinIngot.name=Tin Ingot
+item.uraniumIngot.name=Uranium Ingot
 
 # Nuggets
 item.obsidianNugget.name=Refined Obsidian Nugget
@@ -294,6 +297,7 @@ item.glowstoneNugget.name=Glowstone Nugget
 item.steelNugget.name=Steel Nugget
 item.copperNugget.name=Copper Nugget
 item.tinNugget.name=Tin Nugget
+item.uraniumNugget.name=Uranium Nugget
 
 # Gasses
 gas.hydrogen=Hydrogen
@@ -312,6 +316,10 @@ gas.deuterium=Deuterium
 gas.tritium=Tritium
 gas.lithium=Lithium
 gas.fusionfuel=D-T Fuel
+gas.fissilefuel=Fissile Fuel
+gas.uraniumhexafluoride=Uranium Hexafluoride
+gas.hydrofluoricacid=Hydrofluoric Acid
+gas.uraniumoxide=Uranium Oxide
 
 gas.iron=Iron Slurry
 gas.gold=Gold Slurry
@@ -352,6 +360,13 @@ fluid.liquiddeuterium=Liquid Deuterium
 fluid.liquidtritium=Liquid Tritium
 fluid.liquidfusionfuel=Liquid D-T Fuel
 fluid.steam=Steam
+fluid.fissilefuel=Liquid Fissile Fuel
+fluid.uraniumhexafluoride=Liquid Uranium Hexafluoride
+fluid.hydrofluoricacid=Liquid Hydrofluoric Acid
+fluid.uraniumoxide=Liquid Uranium Oxide
+
+
+
 
 # OreGas names
 oregas.iron=Iron Ore

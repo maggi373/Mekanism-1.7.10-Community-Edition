@@ -22,6 +22,7 @@ import mekanism.client.jei.machine.other.MetallurgicInfuserRecipeCategory;
 import mekanism.client.jei.machine.other.PRCRecipeCategory;
 import mekanism.client.jei.machine.other.RotaryCondensentratorRecipeCategory;
 import mekanism.client.jei.machine.other.SolarNeutronRecipeCategory;
+import mekanism.client.jei.machine.other.IsotopicCentrifugeRecipeCategory;
 import mekanism.client.jei.machine.other.ThermalEvaporationRecipeCategory;
 import mekanism.common.MekanismBlocks;
 import mekanism.common.MekanismItems;
@@ -117,6 +118,7 @@ public class MekanismJEI implements IModPlugin {
         addRecipeCategory(registry, MachineType.ROTARY_CONDENSENTRATOR, new RotaryCondensentratorRecipeCategory(guiHelper, false));
 
         addRecipeCategory(registry, MachineType.SOLAR_NEUTRON_ACTIVATOR, new SolarNeutronRecipeCategory(guiHelper));
+        addRecipeCategory(registry, MachineType.ISOTOPIC_CENTRIFUGE, new IsotopicCentrifugeRecipeCategory(guiHelper));
 
         addRecipeCategory(registry, MachineType.COMBINER, new DoubleMachineRecipeCategory(guiHelper, Recipe.COMBINER.getJEICategory(),
               "tile.MachineBlock.Combiner.name", ProgressBar.STONE));
@@ -172,6 +174,7 @@ public class MekanismJEI implements IModPlugin {
         RecipeRegistryHelper.registerOxidizer(registry);
         RecipeRegistryHelper.registerWasher(registry);
         RecipeRegistryHelper.registerNeutronActivator(registry);
+        RecipeRegistryHelper.registerIsotopicCentrifuge(registry);
         RecipeRegistryHelper.registerSeparator(registry);
         RecipeRegistryHelper.registerEvaporationPlant(registry);
         RecipeRegistryHelper.registerReactionChamber(registry);

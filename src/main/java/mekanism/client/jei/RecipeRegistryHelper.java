@@ -12,6 +12,7 @@ import mekanism.client.gui.GuiCrusher;
 import mekanism.client.gui.GuiElectrolyticSeparator;
 import mekanism.client.gui.GuiEnergizedSmelter;
 import mekanism.client.gui.GuiEnrichmentChamber;
+import mekanism.client.gui.GuiIsotopicCentrifuge;
 import mekanism.client.gui.GuiMetallurgicInfuser;
 import mekanism.client.gui.GuiOsmiumCompressor;
 import mekanism.client.gui.GuiPRC;
@@ -36,6 +37,7 @@ import mekanism.client.jei.machine.chemical.ChemicalInfuserRecipeWrapper;
 import mekanism.client.jei.machine.chemical.ChemicalOxidizerRecipeWrapper;
 import mekanism.client.jei.machine.chemical.ChemicalWasherRecipeWrapper;
 import mekanism.client.jei.machine.other.ElectrolyticSeparatorRecipeWrapper;
+import mekanism.client.jei.machine.other.IsotopicCentrifugeRecipeWrapper;
 import mekanism.client.jei.machine.other.MetallurgicInfuserRecipeWrapper;
 import mekanism.client.jei.machine.other.PRCRecipeWrapper;
 import mekanism.client.jei.machine.other.RotaryCondensentratorRecipeWrapper;
@@ -187,6 +189,15 @@ public class RecipeRegistryHelper {
         addRecipes(registry, Recipe.SOLAR_NEUTRON_ACTIVATOR, SolarNeutronRecipeWrapper::new);
         registry.addRecipeClickArea(GuiSolarNeutronActivator.class, 64, 39, 48, 8, Recipe.SOLAR_NEUTRON_ACTIVATOR.getJEICategory());
         registerRecipeItem(registry, MachineType.SOLAR_NEUTRON_ACTIVATOR, Recipe.SOLAR_NEUTRON_ACTIVATOR);
+    }
+    
+    public static void registerIsotopicCentrifuge(IModRegistry registry) {
+        if (!MachineType.ISOTOPIC_CENTRIFUGE.isEnabled()) {
+            return;
+        }
+        addRecipes(registry, Recipe.ISOTOPIC_CENTRIFUGE, IsotopicCentrifugeRecipeWrapper::new);
+        registry.addRecipeClickArea(GuiIsotopicCentrifuge.class, 64, 39, 48, 8, Recipe.ISOTOPIC_CENTRIFUGE.getJEICategory());
+        registerRecipeItem(registry, MachineType.ISOTOPIC_CENTRIFUGE, Recipe.ISOTOPIC_CENTRIFUGE);
     }
 
     public static void registerSeparator(IModRegistry registry) {
