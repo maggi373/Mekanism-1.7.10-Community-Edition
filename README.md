@@ -1,6 +1,6 @@
 # Unofficial attempt to backport new features to Mekanism 1.12 #
 
-This is just a personal project, expect bugs and incomplete features
+this is just an attempt of a beginner to backport the new multiblock structures, expect bugs or this project to be abandoned
 
 Don't bother the official Mekanism github with issues related to this fork, please.
 
