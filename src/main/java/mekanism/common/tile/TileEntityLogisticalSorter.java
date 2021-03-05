@@ -528,7 +528,7 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
                 if (!(arguments[0] instanceof String)) {
                     return new Object[]{"Invalid parameters."};
                 }
-                color = EnumColor.getFromDyeName((String) arguments[0]);
+                color = EnumColor.getFromUnlocalizedName((String) arguments[0]);
                 if (color == null) {
                     return new Object[]{"Default color set to null"};
                 }
