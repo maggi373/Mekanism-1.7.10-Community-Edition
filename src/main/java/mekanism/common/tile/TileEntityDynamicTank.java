@@ -14,6 +14,7 @@ import mekanism.common.content.tank.SynchronizedTankData.ValveData;
 import mekanism.common.content.tank.TankCache;
 import mekanism.common.content.tank.TankUpdateProtocol;
 import mekanism.common.multiblock.MultiblockManager;
+import mekanism.common.recipe.RecipeHandler;
 import mekanism.common.util.FluidContainerUtils;
 import mekanism.common.util.FluidContainerUtils.ContainerEditMode;
 import mekanism.common.util.InventoryUtils;
@@ -28,6 +29,8 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 
 public class TileEntityDynamicTank extends TileEntityMultiblock<SynchronizedTankData> implements IFluidContainerManager {
+
+    private static final String[] methods = new String[]{"getLiquidType", "getFilledVolume", "getMaxVolume"};
 
     protected static final int[] SLOTS = {0, 1};
 
@@ -58,7 +61,7 @@ public class TileEntityDynamicTank extends TileEntityMultiblock<SynchronizedTank
         if (world.isRemote) {
             if (clientHasStructure && isRendering) {
                 if (structure != null) {
-                    float targetScale = (float) (structure.fluidStored != null ? structure.fluidStored.amount : 0) / clientCapacity;
+                    float targetScale = (float) (structure.fluidStored != null ? structure.fluidStored.getAmount() : 0) / clientCapacity;
                     if (Math.abs(prevScale - targetScale) > 0.01) {
                         prevScale = (9 * prevScale + targetScale) / 10;
                     }
@@ -73,7 +76,7 @@ public class TileEntityDynamicTank extends TileEntityMultiblock<SynchronizedTank
                 valveViewing.clear();
             }
         } else if (structure != null) {
-            if (structure.fluidStored != null && structure.fluidStored.amount <= 0) {
+            if (structure.fluidStored != null && structure.fluidStored.getAmount() <= 0) {
                 structure.fluidStored = null;
                 markDirty();
             }
@@ -98,7 +101,7 @@ public class TileEntityDynamicTank extends TileEntityMultiblock<SynchronizedTank
     }
 
     public void manageInventory() {
-        int needed = (structure.volume * TankUpdateProtocol.FLUID_PER_TANK) - (structure.fluidStored != null ? structure.fluidStored.amount : 0);
+        int needed = (structure.volume * TankUpdateProtocol.FLUID_PER_TANK) - (structure.fluidStored != null ? structure.fluidStored.getAmount() : 0);
         if (FluidContainerUtils.isFluidContainer(structure.inventory.get(0))) {
             structure.fluidStored = FluidContainerUtils.handleContainerItem(this, structure.inventory, structure.editMode, structure.fluidStored, needed, 0, 1, null);
             Mekanism.packetHandler.sendUpdatePacket(this);
@@ -197,7 +200,20 @@ public class TileEntityDynamicTank extends TileEntityMultiblock<SynchronizedTank
         if (clientCapacity == 0 || structure.fluidStored == null) {
             return 0;
         }
-        return (int) (structure.fluidStored.amount * i / clientCapacity);
+        return (int) (structure.fluidStored.getAmount() * i / clientCapacity);
+    }
+
+    public Object[] invoke(int method, Object[] arguments) throws NoSuchMethodException {
+        switch (method) {
+            case 0:
+                return new Object[]{structure.fluidStored.getDisplayName()};
+            case 1:
+                return new Object[]{structure.fluidStored.getAmount()};
+            case 2:
+                return new Object[]{structure.volume};
+            default:
+                throw new NoSuchMethodException();
+        }
     }
 
     @Override
