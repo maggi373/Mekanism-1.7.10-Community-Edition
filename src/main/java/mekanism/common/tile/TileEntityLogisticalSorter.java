@@ -64,7 +64,7 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
     public int delayTicks;
     public TileComponentUpgrade upgradeComponent;
     public TileComponentSecurity securityComponent = new TileComponentSecurity(this);
-    public String[] methods = {"setDefaultColor", "setRoundRobin", "setAutoEject", "addFilter", "removeFilter", "addOreFilter", "removeOreFilter", "setSingleItem"};
+    public String[] methods = {"setDefaultColor", "setRoundRobin", "setAutoEject", "addFilter", "removeFilter", "addOreFilter", "removeOreFilter", "setSingleItem", "getSingleItem", "getDefaultColor", "resetDefaultColor", "getAutoEject", "getRoundRobin", "setRedstoneControl", "getRedstoneControl"};
     private int currentRedstoneLevel;
 
     public TileEntityLogisticalSorter() {
@@ -606,7 +606,39 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
                 }
                 singleItem = (Boolean) arguments[0];
                 return new Object[]{"Single-item mode set to " + singleItem};
+            }else if (method == 8) {
+                return new Object[]{singleItem};
             }
+            else if (method == 9) {
+                return new Object[]{color.unlocalizedName};
+            }else if (method == 10) {
+                color = null;
+                return new Object[]{"Default color reset successfull "};
+            }else if (method == 11) {
+                if (!(arguments[0] instanceof String)) {
+                    return new Object[]{"Invalid parameters."};
+                }
+                switch ((String) arguments[0]) {
+                    case "disabled":
+                        controlType = RedstoneControl.DISABLED;
+                        break;
+                    case "high":
+                        controlType = RedstoneControl.HIGH;
+                        break;
+                    case "low":
+                        controlType = RedstoneControl.LOW;
+                        break;
+                    case "pulse":
+                        controlType = RedstoneControl.PULSE;
+                        break;
+                    default:
+                        return new Object[]{"Invalid control mode"};
+                }
+                return new Object[]{"Redstone control mode set to " + controlType};
+            }else if (method == 12) {
+                return new Object[]{controlType};
+            }
+
         }
 
         for (EntityPlayer player : playersUsing) {
