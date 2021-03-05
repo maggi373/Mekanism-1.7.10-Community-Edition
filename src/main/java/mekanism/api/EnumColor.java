@@ -71,7 +71,7 @@ public enum EnumColor implements IStringSerializable {
 
     public static EnumColor getFromUnlocalizedName(String s) {
         for (EnumColor c : values()) {
-            if (c.unlocalizedName.equalsIgnoreCase(s)) {
+            if (c.unlocalizedName.equalsIgnoreCase(s.replace(" ",""))) {
                 return c;
             }
         }

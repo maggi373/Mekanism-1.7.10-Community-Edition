@@ -1,8 +1,10 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
+
 import java.util.Iterator;
 import javax.annotation.Nonnull;
+
 import mekanism.api.Coord4D;
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigCardAccess.ISpecialConfigData;
@@ -52,7 +54,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 
 public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implements IRedstoneControl, ISpecialConfigData, ISustainedData, ISecurityTile,
-      IComputerIntegration, IUpgradeTile, IComparatorSupport {
+        IComputerIntegration, IUpgradeTile, IComparatorSupport {
 
     public HashList<TransporterFilter> filters = new HashList<>();
     public RedstoneControl controlType = RedstoneControl.DISABLED;
@@ -60,11 +62,15 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
     public boolean autoEject;
     public boolean roundRobin;
     public boolean singleItem;
+    /**
+     * Stack Size to be emitted
+     */
+    public int itemEmitSize = 64;
     public int rrIndex = 0;
     public int delayTicks;
     public TileComponentUpgrade upgradeComponent;
     public TileComponentSecurity securityComponent = new TileComponentSecurity(this);
-    public String[] methods = {"setDefaultColor", "setRoundRobin", "setAutoEject", "addFilter", "removeFilter", "addOreFilter", "removeOreFilter", "setSingleItem", "getSingleItem", "getDefaultColor", "resetDefaultColor", "getAutoEject", "getRoundRobin", "setRedstoneControl", "getRedstoneControl"};
+    public String[] methods = {"setDefaultColor", "setRoundRobin", "setAutoEject", "addFilter", "removeFilter", "addOreFilter", "removeOreFilter", "setSingleItem", "getSingleItem", "getDefaultColor", "resetDefaultColor", "getAutoEject", "getRoundRobin", "setRedstoneControl", "getRedstoneControl", "setItemEmitSize", "getItemEmitSize"};
     private int currentRedstoneLevel;
 
     public TileEntityLogisticalSorter() {
@@ -123,7 +129,7 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
                     }
 
                     if (!sentItems && autoEject) {
-                        TransitRequest request = TransitRequest.buildInventoryMap(back, facing.getOpposite(), singleItem ? 1 : 64, new StrictFilterFinder());
+                        TransitRequest request = TransitRequest.buildInventoryMap(back, facing.getOpposite(), singleItem ? 1 : itemEmitSize, new StrictFilterFinder());
                         TransitResponse response = emitItemToTransporter(front, request, color, 0);
                         if (!response.isEmpty()) {
                             response.getInvStack(back, facing).use(response.getSendingAmount());
@@ -547,8 +553,8 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
                 return new Object[]{"Auto-eject mode set to " + autoEject};
             } else if (method == 3) {
                 if (arguments.length != 6 || !(arguments[0] instanceof String) || !(arguments[1] instanceof Double) ||
-                    !(arguments[2] instanceof String) || !(arguments[3] instanceof Boolean) ||
-                    !(arguments[4] instanceof Double) || !(arguments[5] instanceof Double)) {
+                        !(arguments[2] instanceof String) || !(arguments[3] instanceof Boolean) ||
+                        !(arguments[4] instanceof Double) || !(arguments[5] instanceof Double)) {
                     return new Object[]{"Invalid parameters."};
                 }
                 TItemStackFilter filter = new TItemStackFilter();
@@ -606,15 +612,14 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
                 }
                 singleItem = (Boolean) arguments[0];
                 return new Object[]{"Single-item mode set to " + singleItem};
-            }else if (method == 8) {
+            } else if (method == 8) {
                 return new Object[]{singleItem};
-            }
-            else if (method == 9) {
+            } else if (method == 9) {
                 return new Object[]{color.unlocalizedName};
-            }else if (method == 10) {
+            } else if (method == 10) {
                 color = null;
                 return new Object[]{"Default color reset successfull "};
-            }else if (method == 11) {
+            } else if (method == 11) {
                 if (!(arguments[0] instanceof String)) {
                     return new Object[]{"Invalid parameters."};
                 }
@@ -635,10 +640,17 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
                         return new Object[]{"Invalid control mode"};
                 }
                 return new Object[]{"Redstone control mode set to " + controlType};
-            }else if (method == 12) {
+            } else if (method == 12) {
                 return new Object[]{controlType};
+            } else if (method == 13) {
+                if (!(arguments[0] instanceof Double)) {
+                    return new Object[]{"Invalid parameters."};
+                }
+                itemEmitSize = ((Double) arguments[0]).intValue();
+                return new Object[]{"Emit stack size set to " + itemEmitSize};
+            } else if (method == 14) {
+                return new Object[]{itemEmitSize};
             }
-
         }
 
         for (EntityPlayer player : playersUsing) {
