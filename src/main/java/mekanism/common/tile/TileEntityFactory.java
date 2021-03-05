@@ -74,7 +74,7 @@ import net.minecraftforge.items.ItemHandlerHelper;
 public class TileEntityFactory extends TileEntityMachine implements IComputerIntegration, ISideConfiguration, IGasHandler, ISpecialConfigData, ITierUpgradeable,
       ISustainedData, IComparatorSupport {
 
-    private static final String[] methods = new String[]{"getEnergy", "getProgress", "facing", "canOperate", "getMaxEnergy", "getEnergyNeeded"};
+    private static final String[] methods = new String[]{"getEnergy", "getProgress", "facing", "canOperate", "getMaxEnergy", "getEnergyNeeded", "setSorting", "getSorting", "getInputInventoryCount", "getOutputInventoryCount", "getInputInventoryType", "getOutputInventoryType"};
     private final MachineRecipe[] cachedRecipe;
     /**
      * This Factory's tier.
@@ -828,31 +828,69 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
                 if (arguments[0] == null) {
                     return new Object[]{"Please provide a target operation."};
                 }
-                if (!(arguments[0] instanceof Double) && !(arguments[0] instanceof Integer)) {
+                if (!(arguments[0] instanceof Double)) {
                     return new Object[]{"Invalid characters."};
                 }
                 if ((Integer) arguments[0] < 0 || (Integer) arguments[0] > progress.length) {
                     return new Object[]{"No such operation found."};
                 }
-                return new Object[]{progress[(Integer) arguments[0]]};
+                return new Object[]{progress[((Double) arguments[0]).intValue()]};
             case 2:
                 return new Object[]{facing};
             case 3:
                 if (arguments[0] == null) {
                     return new Object[]{"Please provide a target operation."};
                 }
-                if (!(arguments[0] instanceof Double) && !(arguments[0] instanceof Integer)) {
+                if (!(arguments[0] instanceof Double)) {
                     return new Object[]{"Invalid characters."};
                 }
                 if ((Integer) arguments[0] < 0 || (Integer) arguments[0] > progress.length) {
                     return new Object[]{"No such operation found."};
                 }
                 return new Object[]{
-                      canOperate(getInputSlot((Integer) arguments[0]), getOutputSlot((Integer) arguments[0]))};
+                      canOperate(getInputSlot(((Double) arguments[0]).intValue()), getOutputSlot(((Double) arguments[0]).intValue()))};
             case 4:
                 return new Object[]{getMaxEnergy()};
             case 5:
                 return new Object[]{getMaxEnergy() - getEnergy()};
+            case 6:
+                if (!(arguments[0] instanceof Boolean)) {
+                    return new Object[]{"Invalid parameters."};
+                }
+                sorting = (Boolean) arguments[0];
+                return new Object[]{"Sorting mode set to " + sorting};
+            case 7:
+                int[] input = new int[tier.processes];
+
+                for (int i = 0; i < 5+tier.processes; i++) {
+                    input[i] = inventory.get(5 + i).getCount();
+                }
+                return new Object[]{input};
+                break;
+            case 8:
+                int[] output = new int[tier.processes];
+
+                for (int i = 0; i < 5+(tier.processes*2); i++) {
+                    output[i] = inventory.get(i + 5+tier.processes).getCount();
+                }
+                return new Object[]{output};
+            break;
+            case 9:
+                String[] input2 = new String[tier.processes];
+
+                for (int i = 0; i < 5+tier.processes; i++) {
+                    input2[i] = inventory.get(5 + i).getDisplayName().getString();
+                }
+                return new Object[]{input2};
+            break;
+            case 10:
+                String[] output2 = new String[tier.processes];
+
+                for (int i = 0; i < 5+(tier.processes*2); i++) {
+                    output2[i] = inventory.get(i + 5+tier.processes).getDisplayName().getString();
+                }
+                return new Object[]{output2};
+            break;
             default:
                 throw new NoSuchMethodException();
         }
