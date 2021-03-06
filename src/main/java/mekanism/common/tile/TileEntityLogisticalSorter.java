@@ -3,6 +3,7 @@ package mekanism.common.tile;
 import io.netty.buffer.ByteBuf;
 
 import java.util.Iterator;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import mekanism.api.Coord4D;
@@ -559,7 +560,7 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
                 }
                 TItemStackFilter filter = new TItemStackFilter();
                 filter.setItemStack(new ItemStack(Item.getByNameOrId((String) arguments[0]), 1, ((Double) arguments[1]).intValue()));
-                filter.color = EnumColor.getFromDyeName((String) arguments[2]);
+                filter.color = EnumColor.getFromUnlocalizedName((String) arguments[2]);
                 filter.sizeMode = (Boolean) arguments[3];
                 filter.min = ((Double) arguments[4]).intValue();
                 filter.max = ((Double) arguments[5]).intValue();
@@ -587,7 +588,7 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
                 }
                 TOreDictFilter filter = new TOreDictFilter();
                 filter.setOreDictName((String) arguments[0]);
-                filter.color = EnumColor.getFromDyeName((String) arguments[1]);
+                filter.color = EnumColor.getFromUnlocalizedName((String) arguments[1]);
                 filters.add(filter);
                 return new Object[]{"Added filter."};
             } else if (method == 6) {
