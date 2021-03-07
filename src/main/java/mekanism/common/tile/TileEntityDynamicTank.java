@@ -246,7 +246,7 @@ public class TileEntityDynamicTank extends TileEntityMultiblock<SynchronizedTank
             case 0:
                 return new Object[]{structure != null ? structure.fluidStored != null ? structure.fluidStored.amount : 0 : 0};
             case 1:
-                return new Object[]{clientCapacity};
+                return new Object[]{structure != null ? structure.volume * 16000 : 0};
             case 2:
                 return new Object[]{structure != null ? structure.fluidStored != null ? structure.fluidStored.getLocalizedName() : null : null};
             default:

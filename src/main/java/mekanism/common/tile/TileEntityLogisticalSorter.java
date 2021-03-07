@@ -615,7 +615,7 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
         } else if (method == 8) {
             return new Object[]{singleItem};
         } else if (method == 9) {
-            return new Object[]{color.unlocalizedName};
+            return new Object[]{color != null ? color.unlocalizedName: null};
         } else if (method == 10) {
             color = null;
             return new Object[]{"Default color reset successfull "};

@@ -1027,7 +1027,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
             doEject = (Boolean) arguments[0];
             return new Object[]{"Auto Eject set to " + doEject};
         }else if (method == 15) {
-            return new Object[]{silkTouch};
+            return new Object[]{doEject};
         }else if (method == 16) {
             if (!(arguments[0] instanceof Boolean)) {
                 return new Object[]{"Invalid parameters."};
@@ -1035,7 +1035,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
             doPull = (Boolean) arguments[0];
             return new Object[]{"Pull set to " + doPull};
         }else if (method == 17) {
-            return new Object[]{silkTouch};
+            return new Object[]{doPull};
         }
         for (EntityPlayer player : playersUsing) {
             Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getGenericPacket(new TileNetworkList())), (EntityPlayerMP) player);
