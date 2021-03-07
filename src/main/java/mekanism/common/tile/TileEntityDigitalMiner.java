@@ -1017,7 +1017,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
                 return new Object[]{"Invalid parameters."};
             }
             silkTouch = (Boolean) arguments[0];
-            return new Object[]{"Round-robin mode set to " + silkTouch};
+            return new Object[]{"Silk touch set to " + silkTouch};
         }else if (method == 13) {
             return new Object[]{silkTouch};
         }else if (method == 14) {
@@ -1025,7 +1025,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
                 return new Object[]{"Invalid parameters."};
             }
             doEject = (Boolean) arguments[0];
-            return new Object[]{"Round-robin mode set to " + doEject};
+            return new Object[]{"Auto Eject set to " + doEject};
         }else if (method == 15) {
             return new Object[]{silkTouch};
         }else if (method == 16) {
@@ -1033,7 +1033,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
                 return new Object[]{"Invalid parameters."};
             }
             doPull = (Boolean) arguments[0];
-            return new Object[]{"Round-robin mode set to " + doPull};
+            return new Object[]{"Pull set to " + doPull};
         }else if (method == 17) {
             return new Object[]{silkTouch};
         }

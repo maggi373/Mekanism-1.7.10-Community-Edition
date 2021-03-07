@@ -530,129 +530,132 @@ public class TileEntityLogisticalSorter extends TileEntityEffectsBlock implement
 
     @Override
     public Object[] invoke(int method, Object[] arguments) throws NoSuchMethodException {
-        if (arguments.length > 0) {
-            if (method == 0) {
-                if (!(arguments[0] instanceof String)) {
-                    return new Object[]{"Invalid parameters."};
-                }
-                color = EnumColor.getFromUnlocalizedName((String) arguments[0]);
-                if (color == null) {
-                    return new Object[]{"Default color set to null"};
-                }
-                return new Object[]{"Default color set to " + color.dyeName};
-            } else if (method == 1) {
-                if (!(arguments[0] instanceof Boolean)) {
-                    return new Object[]{"Invalid parameters."};
-                }
-                roundRobin = (Boolean) arguments[0];
-                return new Object[]{"Round-robin mode set to " + roundRobin};
-            } else if (method == 2) {
-                if (!(arguments[0] instanceof Boolean)) {
-                    return new Object[]{"Invalid parameters."};
-                }
-                autoEject = (Boolean) arguments[0];
-                return new Object[]{"Auto-eject mode set to " + autoEject};
-            } else if (method == 3) {
-                if (arguments.length != 6 || !(arguments[0] instanceof String) || !(arguments[1] instanceof Double) ||
-                        !(arguments[2] instanceof String) || !(arguments[3] instanceof Boolean) ||
-                        !(arguments[4] instanceof Double) || !(arguments[5] instanceof Double)) {
-                    return new Object[]{"Invalid parameters."};
-                }
-                TItemStackFilter filter = new TItemStackFilter();
-                filter.setItemStack(new ItemStack(Item.getByNameOrId((String) arguments[0]), 1, ((Double) arguments[1]).intValue()));
-                filter.color = EnumColor.getFromUnlocalizedName((String) arguments[2]);
-                filter.sizeMode = (Boolean) arguments[3];
-                filter.min = ((Double) arguments[4]).intValue();
-                filter.max = ((Double) arguments[5]).intValue();
-                filters.add(filter);
-                return new Object[]{"Added filter."};
-            } else if (method == 4) {
-                if (arguments.length != 2 || !(arguments[0] instanceof String) || !(arguments[1] instanceof Double)) {
-                    return new Object[]{"Invalid parameters."};
-                }
-                ItemStack stack = new ItemStack(Item.getByNameOrId((String) arguments[0]), 1, ((Double) arguments[1]).intValue());
-                Iterator<TransporterFilter> iter = filters.iterator();
-                while (iter.hasNext()) {
-                    TransporterFilter filter = iter.next();
-                    if (filter instanceof TItemStackFilter) {
-                        if (StackUtils.equalsWildcard(((TItemStackFilter) filter).getItemStack(), stack)) {
-                            iter.remove();
-                            return new Object[]{"Removed filter."};
-                        }
-                    }
-                }
-                return new Object[]{"Couldn't find filter."};
-            } else if (method == 5) {
-                if (arguments.length != 2 || !(arguments[0] instanceof String) || !(arguments[1] instanceof String)) {
-                    return new Object[]{"Invalid parameters."};
-                }
-                TOreDictFilter filter = new TOreDictFilter();
-                filter.setOreDictName((String) arguments[0]);
-                filter.color = EnumColor.getFromUnlocalizedName((String) arguments[1]);
-                filters.add(filter);
-                return new Object[]{"Added filter."};
-            } else if (method == 6) {
-                if (arguments.length != 1 || !(arguments[0] instanceof String)) {
-                    return new Object[]{"Invalid parameters."};
-                }
-                String ore = (String) arguments[0];
-                Iterator<TransporterFilter> iter = filters.iterator();
-                while (iter.hasNext()) {
-                    TransporterFilter filter = iter.next();
-                    if (filter instanceof TOreDictFilter) {
-                        if (((TOreDictFilter) filter).getOreDictName().equals(ore)) {
-                            iter.remove();
-                            return new Object[]{"Removed filter."};
-                        }
-                    }
-                }
-                return new Object[]{"Couldn't find filter."};
-            } else if (method == 7) {
-                if (!(arguments[0] instanceof Boolean)) {
-                    return new Object[]{"Invalid parameters."};
-                }
-                singleItem = (Boolean) arguments[0];
-                return new Object[]{"Single-item mode set to " + singleItem};
-            } else if (method == 8) {
-                return new Object[]{singleItem};
-            } else if (method == 9) {
-                return new Object[]{color.unlocalizedName};
-            } else if (method == 10) {
-                color = null;
-                return new Object[]{"Default color reset successfull "};
-            } else if (method == 11) {
-                if (!(arguments[0] instanceof String)) {
-                    return new Object[]{"Invalid parameters."};
-                }
-                switch ((String) arguments[0]) {
-                    case "disabled":
-                        controlType = RedstoneControl.DISABLED;
-                        break;
-                    case "high":
-                        controlType = RedstoneControl.HIGH;
-                        break;
-                    case "low":
-                        controlType = RedstoneControl.LOW;
-                        break;
-                    case "pulse":
-                        controlType = RedstoneControl.PULSE;
-                        break;
-                    default:
-                        return new Object[]{"Invalid control mode"};
-                }
-                return new Object[]{"Redstone control mode set to " + controlType};
-            } else if (method == 12) {
-                return new Object[]{controlType};
-            } else if (method == 13) {
-                if (!(arguments[0] instanceof Double)) {
-                    return new Object[]{"Invalid parameters."};
-                }
-                itemEmitSize = ((Double) arguments[0]).intValue();
-                return new Object[]{"Emit stack size set to " + itemEmitSize};
-            } else if (method == 14) {
-                return new Object[]{itemEmitSize};
+        if (method == 0) {
+            if (!(arguments[0] instanceof String)) {
+                return new Object[]{"Invalid parameters."};
             }
+            color = EnumColor.getFromUnlocalizedName((String) arguments[0]);
+            if (color == null) {
+                return new Object[]{"Default color set to null"};
+            }
+            return new Object[]{"Default color set to " + color.dyeName};
+        } else if (method == 1) {
+            if (!(arguments[0] instanceof Boolean)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            roundRobin = (Boolean) arguments[0];
+            return new Object[]{"Round-robin mode set to " + roundRobin};
+        } else if (method == 2) {
+            if (!(arguments[0] instanceof Boolean)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            autoEject = (Boolean) arguments[0];
+            return new Object[]{"Auto-eject mode set to " + autoEject};
+        } else if (method == 3) {
+            if (arguments.length != 6 || !(arguments[0] instanceof String) || !(arguments[1] instanceof Double) ||
+                    !(arguments[2] instanceof String) || !(arguments[3] instanceof Boolean) ||
+                    !(arguments[4] instanceof Double) || !(arguments[5] instanceof Double)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            TItemStackFilter filter = new TItemStackFilter();
+            filter.setItemStack(new ItemStack(Item.getByNameOrId((String) arguments[0]), 1, ((Double) arguments[1]).intValue()));
+            filter.color = EnumColor.getFromUnlocalizedName((String) arguments[2]);
+            filter.sizeMode = (Boolean) arguments[3];
+            filter.min = ((Double) arguments[4]).intValue();
+            filter.max = ((Double) arguments[5]).intValue();
+            filters.add(filter);
+            return new Object[]{"Added filter."};
+        } else if (method == 4) {
+            if (arguments.length != 2 || !(arguments[0] instanceof String) || !(arguments[1] instanceof Double)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            ItemStack stack = new ItemStack(Item.getByNameOrId((String) arguments[0]), 1, ((Double) arguments[1]).intValue());
+            Iterator<TransporterFilter> iter = filters.iterator();
+            while (iter.hasNext()) {
+                TransporterFilter filter = iter.next();
+                if (filter instanceof TItemStackFilter) {
+                    if (StackUtils.equalsWildcard(((TItemStackFilter) filter).getItemStack(), stack)) {
+                        iter.remove();
+                        return new Object[]{"Removed filter."};
+                    }
+                }
+            }
+            return new Object[]{"Couldn't find filter."};
+        } else if (method == 5) {
+            if (arguments.length != 2 || !(arguments[0] instanceof String) || !(arguments[1] instanceof String)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            TOreDictFilter filter = new TOreDictFilter();
+            filter.setOreDictName((String) arguments[0]);
+            filter.color = EnumColor.getFromUnlocalizedName((String) arguments[1]);
+            filters.add(filter);
+            return new Object[]{"Added filter."};
+        } else if (method == 6) {
+            if (arguments.length != 1 || !(arguments[0] instanceof String)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            String ore = (String) arguments[0];
+            Iterator<TransporterFilter> iter = filters.iterator();
+            while (iter.hasNext()) {
+                TransporterFilter filter = iter.next();
+                if (filter instanceof TOreDictFilter) {
+                    if (((TOreDictFilter) filter).getOreDictName().equals(ore)) {
+                        iter.remove();
+                        return new Object[]{"Removed filter."};
+                    }
+                }
+            }
+            return new Object[]{"Couldn't find filter."};
+        } else if (method == 7) {
+            if (!(arguments[0] instanceof Boolean)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            singleItem = (Boolean) arguments[0];
+            return new Object[]{"Single-item mode set to " + singleItem};
+        } else if (method == 8) {
+            return new Object[]{singleItem};
+        } else if (method == 9) {
+            return new Object[]{color.unlocalizedName};
+        } else if (method == 10) {
+            color = null;
+            return new Object[]{"Default color reset successfull "};
+        }else if (method == 11) {
+            return new Object[]{autoEject};
+        }else if (method == 12) {
+            return new Object[]{roundRobin};
+        } else if (method == 13) {
+            if (!(arguments[0] instanceof String)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            switch ((String) arguments[0]) {
+                case "disabled":
+                    controlType = RedstoneControl.DISABLED;
+                    break;
+                case "high":
+                    controlType = RedstoneControl.HIGH;
+                    break;
+                case "low":
+                    controlType = RedstoneControl.LOW;
+                    break;
+                case "pulse":
+                    controlType = RedstoneControl.PULSE;
+                    break;
+                default:
+                    return new Object[]{"Invalid control mode"};
+            }
+            return new Object[]{"Redstone control mode set to " + controlType};
+        } else if (method == 14) {
+            return new Object[]{controlType};
+        } else if (method == 15) {
+            if (!(arguments[0] instanceof Double)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            itemEmitSize = ((Double) arguments[0]).intValue();
+            return new Object[]{"Emit stack size set to " + itemEmitSize};
+        } else if (method == 16) {
+            return new Object[]{itemEmitSize};
         }
+
 
         for (EntityPlayer player : playersUsing) {
             Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getGenericPacket(new TileNetworkList())), (EntityPlayerMP) player);

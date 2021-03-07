@@ -445,7 +445,11 @@ public class TileEntityFluidTank extends TileEntityContainerBlock implements ICo
             case 1:
                 return new Object[]{fluidTank.getCapacity()};
             case 2:
-                return new Object[]{fluidTank.getFluid().getLocalizedName()};
+                try {
+                    return new Object[]{fluidTank.getFluid().getLocalizedName()};
+                }catch (Exception e){
+                    return new Object[]{null};
+                }
             default:
                 throw new NoSuchMethodException();
         }
