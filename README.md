@@ -1,3 +1,12 @@
+# Unofficial attempt to backport new features to Mekanism 1.12 #
+
+this is just an attempt of a beginner to backport the new multiblock structures, expect bugs or this project to be abandoned
+
+Don't bother the official Mekanism github with issues related to this fork, please.
+
+At the moment of writing this (29/09/2020), i only have things related to the new Fission Reactor (the new gases, a buggy Isotopic Centrifuge, Yellowcake, Uranium, Fluorite, etc.)
+
+
 
 [![Build Status](https://travis-ci.org/aidancbrady/Mekanism.svg?branch=master)](https://travis-ci.org/aidancbrady/Mekanism)
 

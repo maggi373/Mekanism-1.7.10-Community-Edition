@@ -34,6 +34,7 @@ import mekanism.common.recipe.machines.CrystallizerRecipe;
 import mekanism.common.recipe.machines.DissolutionRecipe;
 import mekanism.common.recipe.machines.EnrichmentRecipe;
 import mekanism.common.recipe.machines.InjectionRecipe;
+import mekanism.common.recipe.machines.IsotopicCentrifugeRecipe;
 import mekanism.common.recipe.machines.MachineRecipe;
 import mekanism.common.recipe.machines.MetallurgicInfuserRecipe;
 import mekanism.common.recipe.machines.OsmiumCompressorRecipe;
@@ -277,6 +278,10 @@ public final class RecipeHandler {
     public static void addSolarNeutronRecipe(GasStack inputGas, GasStack outputGas) {
         addRecipe(Recipe.SOLAR_NEUTRON_ACTIVATOR, new SolarNeutronRecipe(inputGas, outputGas));
     }
+    
+    public static void addIsotopicCentrifugeRecipe(GasStack inputGas, GasStack outputGas) {
+        addRecipe(Recipe.ISOTOPIC_CENTRIFUGE, new IsotopicCentrifugeRecipe(inputGas, outputGas));
+    }
 
     public static void addAmbientGas(int dimensionID, String ambientGasName) {
         addRecipe(Recipe.AMBIENT_ACCUMULATOR, new AmbientGasRecipe(dimensionID, ambientGasName));
@@ -417,6 +422,11 @@ public final class RecipeHandler {
     public static SolarNeutronRecipe getSolarNeutronRecipe(@Nonnull GasInput input) {
         return getRecipe(input, Recipe.SOLAR_NEUTRON_ACTIVATOR);
     }
+    
+    @Nullable
+    public static IsotopicCentrifugeRecipe getIsotopicCentrifugeRecipeRecipe(@Nonnull GasInput input) {
+        return getRecipe(input, Recipe.ISOTOPIC_CENTRIFUGE);
+    }
 
     @Nullable
     public static PressurizedRecipe getPRCRecipe(@Nonnull PressurizedInput input) {
@@ -521,6 +531,9 @@ public final class RecipeHandler {
 
         public static final Recipe<GasInput, GasOutput, SolarNeutronRecipe> SOLAR_NEUTRON_ACTIVATOR = new Recipe<>(
               MachineType.SOLAR_NEUTRON_ACTIVATOR, GasInput.class, GasOutput.class, SolarNeutronRecipe.class);
+        
+        public static final Recipe<GasInput, GasOutput, IsotopicCentrifugeRecipe> ISOTOPIC_CENTRIFUGE = new Recipe<>(
+                MachineType.ISOTOPIC_CENTRIFUGE, GasInput.class, GasOutput.class, IsotopicCentrifugeRecipe.class);
 
         static {
             values = ImmutableList.copyOf(values);

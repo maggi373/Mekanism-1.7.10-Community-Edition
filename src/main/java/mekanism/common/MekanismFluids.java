@@ -33,7 +33,11 @@ public class MekanismFluids {
     public static final Gas Tritium = new Gas("tritium", 0x64FF70);
     public static final Gas FusionFuel = new Gas("fusionfuel", 0x7E007D);
     public static final Gas Lithium = new Gas("lithium", 0xEBA400);
-
+    public static final Gas UraniumOxide = new Gas("uraniumoxide", 0xFEFE69); 
+    public static final Gas HydrofluoricAcid = new Gas("hydrofluoricacid", 0xCDCDCD); 
+    public static final Gas UraniumHexafluoride = new Gas("uraniumhexafluoride", 0x355E3B);  
+    public static final Gas FissileFuel = new Gas("fissilefuel", 0x013220);
+    
     public static void register() {
         GasRegistry.register(Hydrogen).registerFluid("liquidhydrogen");
         GasRegistry.register(Oxygen).registerFluid("liquidoxygen");
@@ -50,6 +54,11 @@ public class MekanismFluids {
         GasRegistry.register(Tritium).registerFluid("liquidtritium");
         GasRegistry.register(FusionFuel).registerFluid("liquidfusionfuel");
         GasRegistry.register(Lithium).registerFluid("liquidlithium");
+        GasRegistry.register(UraniumOxide).registerFluid("uraniumoxide");
+        GasRegistry.register(HydrofluoricAcid).registerFluid("hydrofluoricacid");
+        GasRegistry.register(UraniumHexafluoride).registerFluid("uraniumhexafluoride");
+        GasRegistry.register(FissileFuel).registerFluid("fissilefuel");
+
 
         GasRegistry.register(LiquidOsmium).setVisible(false);
 

@@ -49,6 +49,28 @@ public final class OreDictManager {
         addLogRecipes();
 
         List<ItemStack> oreDict;
+        
+        for (ItemStack ore : OreDictionary.getOres("ingotUranium", false)) {
+        	RecipeHandler.addEnrichmentChamberRecipe(StackUtils.size(ore, 1), new ItemStack(MekanismItems.OtherDust, 1, 7));
+        }
+        
+        for (ItemStack dust : OreDictionary.getOres("dustYellowcake", false)) {
+            RecipeHandler.addChemicalOxidizerRecipe(StackUtils.size(dust, 1), new GasStack(MekanismFluids.UraniumOxide, 100));
+        }
+        
+        for (ItemStack ore : OreDictionary.getOres("dustYellowcake", false)) {
+        	RecipeHandler.addChemicalCrystallizerRecipe(new GasStack(MekanismFluids.UraniumOxide, 100), StackUtils.size(ore, 1));
+        }
+        
+        for (ItemStack ore : OreDictionary.getOres("dustFluorite", false)) {
+            RecipeHandler.addChemicalDissolutionChamberRecipe(StackUtils.size(ore, 1), new GasStack(MekanismFluids.HydrofluoricAcid, 1000));
+        }
+        
+        RecipeHandler.addChemicalInfuserRecipe(new GasStack(MekanismFluids.UraniumOxide, 1), new GasStack(MekanismFluids.HydrofluoricAcid, 1), new GasStack(MekanismFluids.UraniumHexafluoride, 2));
+
+
+
+        
 
         for (ItemStack plank : OreDictionary.getOres("plankWood", false)) {
             plank = StackUtils.size(plank, 1);
@@ -390,6 +412,7 @@ public final class OreDictManager {
         for (ItemStack dust : OreDictionary.getOres("dustLithium", false)) {
             RecipeHandler.addChemicalOxidizerRecipe(StackUtils.size(dust, 1), new GasStack(MekanismFluids.Lithium, 100));
         }
+        
 
         InfuseType diamondInfuseType = InfuseRegistry.get("DIAMOND");
         for (ItemStack dust : OreDictionary.getOres("dustObsidian", false)) {
