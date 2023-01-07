@@ -142,7 +142,7 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
     public TileComponentUpgrade upgradeComponent = new TileComponentUpgrade(this, INV_SLOTS.length);
     public TileComponentSecurity securityComponent = new TileComponentSecurity(this);
     public TileComponentChunkLoader chunkLoaderComponent = new TileComponentChunkLoader(this);
-    public String[] methods = {"setRadius", "setMin", "setMax", "addFilter", "removeFilter", "addOreFilter", "removeOreFilter", "reset", "start", "stop", "getToMine"};
+    public String[] methods = {"setRadius", "setMin", "setMax", "addFilter", "removeFilter", "addOreFilter", "removeOreFilter", "reset", "start", "stop", "getToMine", "isRunning", "setSilk", "getSilk", "setEject", "getEject", "setPull", "getPull"};
 
     public TileEntityDigitalMiner() {
         super("DigitalMiner", MachineType.DIGITAL_MINER.getStorage());
@@ -1010,6 +1010,32 @@ public class TileEntityDigitalMiner extends TileEntityElectricBlock implements I
             return new Object[]{"Stopped miner."};
         } else if (method == 10) {
             return new Object[]{searcher != null ? searcher.found : 0};
+        }else if (method == 11) {
+            return new Object[]{running};
+        }else if (method == 12) {
+            if (!(arguments[0] instanceof Boolean)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            silkTouch = (Boolean) arguments[0];
+            return new Object[]{"Silk touch set to " + silkTouch};
+        }else if (method == 13) {
+            return new Object[]{silkTouch};
+        }else if (method == 14) {
+            if (!(arguments[0] instanceof Boolean)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            doEject = (Boolean) arguments[0];
+            return new Object[]{"Auto Eject set to " + doEject};
+        }else if (method == 15) {
+            return new Object[]{doEject};
+        }else if (method == 16) {
+            if (!(arguments[0] instanceof Boolean)) {
+                return new Object[]{"Invalid parameters."};
+            }
+            doPull = (Boolean) arguments[0];
+            return new Object[]{"Pull set to " + doPull};
+        }else if (method == 17) {
+            return new Object[]{doPull};
         }
         for (EntityPlayer player : playersUsing) {
             Mekanism.packetHandler.sendTo(new TileEntityMessage(this, getGenericPacket(new TileNetworkList())), (EntityPlayerMP) player);

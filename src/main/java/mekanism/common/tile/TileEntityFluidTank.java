@@ -18,6 +18,7 @@ import mekanism.common.base.ITierUpgradeable;
 import mekanism.common.base.ITieredTile;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.integration.computer.IComputerIntegration;
 import mekanism.common.security.ISecurityTile;
 import mekanism.common.tier.BaseTier;
 import mekanism.common.tier.FluidTankTier;
@@ -49,8 +50,10 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 
-public class TileEntityFluidTank extends TileEntityContainerBlock implements IActiveState, IConfigurable, IFluidHandlerWrapper, ISustainedTank, IFluidContainerManager,
+public class TileEntityFluidTank extends TileEntityContainerBlock implements IComputerIntegration, IActiveState, IConfigurable, IFluidHandlerWrapper, ISustainedTank, IFluidContainerManager,
       ITankManager, ISecurityTile, ITierUpgradeable, ITieredTile, IComparatorSupport {
+
+    public static final String[] methods = new String[]{"getAmount", "getCapacity", "getLiquidType"};
 
     public boolean isActive;
 
@@ -432,6 +435,25 @@ public class TileEntityFluidTank extends TileEntityContainerBlock implements IAc
     @Override
     public boolean canDrain(EnumFacing from, @Nullable FluidStack fluid) {
         return fluidTank != null && FluidContainerUtils.canDrain(fluidTank.getFluid(), fluid) && !isActive || from != EnumFacing.DOWN;
+    }
+
+    @Override
+    public Object[] invoke(int method, Object[] args) throws NoSuchMethodException {
+        switch (method) {
+            case 0:
+                return new Object[]{fluidTank.getFluidAmount()};
+            case 1:
+                return new Object[]{fluidTank.getCapacity()};
+            case 2:
+                return new Object[]{fluidTank.getFluid() != null ? fluidTank.getFluid().getLocalizedName() : null};
+            default:
+                throw new NoSuchMethodException();
+        }
+    }
+
+    @Override
+    public String[] getMethods() {
+        return methods;
     }
 
     @Override

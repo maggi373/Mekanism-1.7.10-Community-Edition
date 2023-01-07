@@ -69,6 +69,15 @@ public enum EnumColor implements IStringSerializable {
         return null;
     }
 
+    public static EnumColor getFromUnlocalizedName(String s) {
+        for (EnumColor c : values()) {
+            if (c.unlocalizedName.equalsIgnoreCase(s.replace(" ",""))) {
+                return c;
+            }
+        }
+        return null;
+    }
+
     /**
      * Gets the localized name of this color by translating the unlocalized name.
      *

@@ -1,10 +1,12 @@
 package mekanism.common.tile;
 
 import io.netty.buffer.ByteBuf;
+
 import java.util.Arrays;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
 import mekanism.api.EnumColor;
 import mekanism.api.IConfigCardAccess.ISpecialConfigData;
 import mekanism.api.TileNetworkList;
@@ -72,9 +74,9 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 public class TileEntityFactory extends TileEntityMachine implements IComputerIntegration, ISideConfiguration, IGasHandler, ISpecialConfigData, ITierUpgradeable,
-      ISustainedData, IComparatorSupport {
+        ISustainedData, IComparatorSupport {
 
-    private static final String[] methods = new String[]{"getEnergy", "getProgress", "facing", "canOperate", "getMaxEnergy", "getEnergyNeeded"};
+    private static final String[] methods = new String[]{"getEnergy", "getProgress", "facing", "isOperating", "getMaxEnergy", "getEnergyNeeded", "setSorting", "getSorting", "getInputInventoryCount", "getOutputInventoryCount", "getInputInventoryType", "getOutputInventoryType", "getInfuseStorage", "getMaxInfuseStorage"};
     private final MachineRecipe[] cachedRecipe;
     /**
      * This Factory's tier.
@@ -278,7 +280,7 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
 
             for (int process = 0; process < tier.processes; process++) {
                 if (MekanismUtils.canFunction(this) && canOperate(getInputSlot(process), getOutputSlot(process))
-                    && getEnergy() >= energyPerTick && gasTank.getStored() >= secondaryEnergyThisTick) {
+                        && getEnergy() >= energyPerTick && gasTank.getStored() >= secondaryEnergyThisTick) {
                     if ((progress[process] + 1) < ticksRequired) {
                         progress[process]++;
                         gasTank.draw(secondaryEnergyThisTick, true);
@@ -371,13 +373,13 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
                     int checkSlotID = inputSlots[j];
                     ItemStack checkStack = inventory.get(checkSlotID);
                     if (Math.abs(count - checkStack.getCount()) < 2 ||
-                        !InventoryUtils.areItemsStackable(stack, checkStack)) {
+                            !InventoryUtils.areItemsStackable(stack, checkStack)) {
                         continue;
                     }
                     //Output/Input will not match
                     // Only check if the input spot is empty otherwise assume it works
                     if (stack.isEmpty() && !inputProducesOutput(checkSlotID, checkStack, output, true) ||
-                        checkStack.isEmpty() && !inputProducesOutput(slotID, stack, inventory.get(tier.processes + checkSlotID), true)) {
+                            checkStack.isEmpty() && !inputProducesOutput(slotID, stack, inventory.get(tier.processes + checkSlotID), true)) {
                         continue;
                     }
 
@@ -401,7 +403,6 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
      * @param fallbackInput Used if the cached recipe is null or to validate the cached recipe is not out of date.
      * @param output        The output we want.
      * @param updateCache   True to make the cached recipe get updated if it is out of date.
-     *
      * @return True if the recipe produces the given output.
      */
     public boolean inputProducesOutput(int slotID, ItemStack fallbackInput, ItemStack output, boolean updateCache) {
@@ -608,7 +609,7 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
 
         if (recipeType.getFuelType() == MachineFuelType.ADVANCED) {
             if (cachedRecipe[process] instanceof AdvancedMachineRecipe &&
-                ((AdvancedMachineRecipe) cachedRecipe[process]).inputMatches(inventory, inputSlot, gasTank, secondaryEnergyThisTick)) {
+                    ((AdvancedMachineRecipe) cachedRecipe[process]).inputMatches(inventory, inputSlot, gasTank, secondaryEnergyThisTick)) {
                 return ((AdvancedMachineRecipe) cachedRecipe[process]).canOperate(inventory, inputSlot, outputSlot, gasTank, secondaryEnergyThisTick);
             }
             AdvancedMachineRecipe<?> recipe = recipeType.getRecipe(inventory.get(inputSlot), gasTank.getGasType());
@@ -828,31 +829,71 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
                 if (arguments[0] == null) {
                     return new Object[]{"Please provide a target operation."};
                 }
-                if (!(arguments[0] instanceof Double) && !(arguments[0] instanceof Integer)) {
+                if (!(arguments[0] instanceof Double)) {
                     return new Object[]{"Invalid characters."};
                 }
-                if ((Integer) arguments[0] < 0 || (Integer) arguments[0] > progress.length) {
+                if ((Double) arguments[0] < 0 || (Double) arguments[0] > progress.length) {
                     return new Object[]{"No such operation found."};
                 }
-                return new Object[]{progress[(Integer) arguments[0]]};
+                return new Object[]{progress[((Double) arguments[0]).intValue()]};
             case 2:
                 return new Object[]{facing};
             case 3:
                 if (arguments[0] == null) {
                     return new Object[]{"Please provide a target operation."};
                 }
-                if (!(arguments[0] instanceof Double) && !(arguments[0] instanceof Integer)) {
+                if (!(arguments[0] instanceof Double)) {
                     return new Object[]{"Invalid characters."};
                 }
-                if ((Integer) arguments[0] < 0 || (Integer) arguments[0] > progress.length) {
+                if ((Double) arguments[0] < 0 || (Double) arguments[0] > progress.length) {
                     return new Object[]{"No such operation found."};
                 }
                 return new Object[]{
-                      canOperate(getInputSlot((Integer) arguments[0]), getOutputSlot((Integer) arguments[0]))};
+                        canOperate(getInputSlot(((Double) arguments[0]).intValue()), getOutputSlot(((Double) arguments[0]).intValue()))};
             case 4:
                 return new Object[]{getMaxEnergy()};
             case 5:
                 return new Object[]{getMaxEnergy() - getEnergy()};
+            case 6:
+                if (!(arguments[0] instanceof Boolean)) {
+                    return new Object[]{"Invalid parameters."};
+                }
+                sorting = (Boolean) arguments[0];
+                return new Object[]{"Sorting mode set to " + sorting};
+            case 7:
+                return new Object[]{sorting};
+            case 8:
+                int[] input = new int[tier.processes];
+
+                for (int i = 0; i < tier.processes; i++) {
+                    input[i] = inventory.get(5 + i).getCount();
+                }
+                return new Object[]{input};
+            case 9:
+                int[] output = new int[tier.processes];
+
+                for (int i = 0; i < tier.processes; i++) {
+                    output[i] = inventory.get(i + 5 + tier.processes).getCount();
+                }
+                return new Object[]{output};
+            case 10:
+                String[] input2 = new String[tier.processes];
+
+                for (int i = 0; i < tier.processes; i++) {
+                    input2[i] = inventory.get(5 + i).getDisplayName();
+                }
+                return new Object[]{input2};
+            case 11:
+                String[] output2 = new String[tier.processes];
+
+                for (int i = 0; i < tier.processes; i++) {
+                    output2[i] = inventory.get(i + 5 + tier.processes).getDisplayName();
+                }
+                return new Object[]{output2};
+            case 12:
+                return new Object[]{infuseStored.getAmount()};
+            case 13:
+                return new Object[]{maxInfuse};
             default:
                 throw new NoSuchMethodException();
         }
@@ -922,7 +963,7 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
             return false;
         }
         return capability == Capabilities.GAS_HANDLER_CAPABILITY || capability == Capabilities.CONFIG_CARD_CAPABILITY
-               || capability == Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY || super.hasCapability(capability, side);
+                || capability == Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY || super.hasCapability(capability, side);
     }
 
     @Override
@@ -931,7 +972,7 @@ public class TileEntityFactory extends TileEntityMachine implements IComputerInt
             return null;
         }
         if (capability == Capabilities.GAS_HANDLER_CAPABILITY || capability == Capabilities.CONFIG_CARD_CAPABILITY
-            || capability == Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY) {
+                || capability == Capabilities.SPECIAL_CONFIG_DATA_CAPABILITY) {
             return (T) this;
         }
         return super.getCapability(capability, side);
