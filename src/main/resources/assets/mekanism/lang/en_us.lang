@@ -425,6 +425,7 @@ mekanism.configgui.ctgy.tier.tooltip=Settings regarding Mekanism tiers and their
 mekanism.configgui.ctgy.usage.tooltip=Settings regarding machinery and their energy usage
 mekanism.configgui.ctgy.client.tooltip=Client-specific settings regarding Mekanism and all its modules
 mekanism.configgui.ctgy.storage.tooltip=Settings regarding machinery and their energy storage maximum
+mekanism.configgui.ctgy.mekce.tooltip=Settings added by Mekanism Community Edition
 
 # Gui text
 gui.condensentrating=Condensentrating
